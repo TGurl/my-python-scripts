@@ -36,7 +36,7 @@ $ dler -i list
 You can also issue multiple lists:
 
 ```
-$ dler -i list1 list2 list 3 ...
+$ dler -i list1 list2 list3 [...]
 ```
 The script utilizes a feature of _yt-dlp_ to check whether a video has been downloaded already, this file is called _done.txt_ by default, so you won't be downloading a video twice when it appears in multiple lists.
 
