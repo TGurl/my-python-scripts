@@ -1,6 +1,6 @@
 # Systemctl timers
 
-To use these timers copy the folder systemctl and all it's contents to your
+To use these timers copy the folder systemctl and all it's contents to the
 .config folder in your home directory:
 
 ```
