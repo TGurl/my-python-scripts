@@ -1,6 +1,8 @@
 # Waller
 _a simple wallpaper changer written in python_
 
+![Screenshot](img/screener.png)
+
 ## Why waller?
 First of all I wanted a simple script to change the wallpapers on my system,
 using BSPWM. I first had some simple bash scripts which enabled me to change
