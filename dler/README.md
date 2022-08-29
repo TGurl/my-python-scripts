@@ -1,6 +1,8 @@
 # DLer
 _a simple download script using yt-dlp_
 
+![Screenshot](img/dler-screenshot.png)
+
 ## Dependencies
 * yt-dlp
 * python 3
