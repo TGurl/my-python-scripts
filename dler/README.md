@@ -29,14 +29,14 @@ https://www.youtube.com/watch?v=sB7XIlN0kWU
 ### Step 2
 Now you can easily download them by issuing:
 ```
-@ dler -i list
+$ dler -i list
 ```
 
 ### Extra info
 You can also issue multiple lists:
 
 ```
-@ dler -i list1 list2 list 3 ...
+$ dler -i list1 list2 list 3 ...
 ```
 The script utilizes a feature of _yt-dlp_ to check whether a video has been downloaded already, this file is called _done.txt_ by default, so you won't be downloading a video twice when it appears in multiple lists.
 
@@ -45,7 +45,7 @@ The script utilizes a feature of _yt-dlp_ to check whether a video has been down
 If you want to download subtitles with the files:
 
 ```
-@ dler -s -i list
+$ dler -s -i list
 ```
 
 
@@ -53,21 +53,21 @@ If you want to download subtitles with the files:
 If you want to download the files as audio only:
 
 ```
-@ dler -a -i list
+$ dler -a -i list
 ```
 
 ## Hide yt-dlp output
 If you don't want to see the _yt_dlp_ output:
 
 ```
-@dler -q -i list
+$ dler -q -i list
 ```
 
 
 ## Keep the lists after completion
 If you want to keep the lists (including done.txt) than issue:
 ```
-@ dler -k -i list
+$ dler -k -i list
 ```
 
 
