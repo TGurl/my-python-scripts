@@ -32,7 +32,7 @@ Now you can easily download them by issuing:
 $ dler -i list
 ```
 
-### Extra info
+## Multiple lists
 You can also issue multiple lists:
 
 ```
