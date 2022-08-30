@@ -160,7 +160,7 @@ class Utils:
         self.wallpapers = self.fileio.gather_all_wallpapers(
             self.construct_path2wallpapers()
         )
-        self.title = "Waller v2.01 //Copyright © 2020-2022 Transgirl"
+        self.title = "Waller v2.03 //Copyright © 2020-2022 Transgirl"
 
     def get_output(self, command):
         output = getoutput(command)
@@ -196,15 +196,38 @@ class Utils:
         red = self.color.red
         res = self.color.res
         output = self.get_output("systemctl --user status wallpaper.timer").split(" ")
+        # --- check for possible times
+        weeks, days, hours, minutes = "", "", "", ""
+        for idx, line in enumerate(output):
+            if "week" in line:
+                weeks = output[idx -1] + "w "
+
+            if "day" in line:
+                days = output[idx - 1] + "d "
+
+            if "left\n" in output:
+                idx = output.index("left\n") - 1
+                if "min" in output[idx]:
+                    minutes = output[idx]
+                    hours = output[idx - 2]
+                elif "h" in output[idx]:
+                    hours = output[idx]
+
+        timeleft = f"{weeks}{days}{hours}{minutes}"
         if "left\n" in output:
-            idx = output.index("left\n") - 1
-            timeleft = output[idx]
-            if "min" in timeleft:
-                idx = output.index("left\n") - 2
-                timeleft = output[idx] + " " + timeleft
             return f"{gre}{timeleft}{res}"
         else:
             return f"{red}disabled{res}"
+
+        #if "left\n" in output:
+        #    idx = output.index("left\n") - 1
+        #    timeleft = output[idx]
+        #    if "min" in timeleft:
+        #        idx = output.index("left\n") - 2
+        #        timeleft = output[idx] + " " + timeleft
+        #    return f"{gre}{timeleft}{res}"
+        #else:
+        #    return f"{red}disabled{res}"
 
     def get_current_number(self, wallpaper):
         number = wallpaper.split(".")[0].split("-")[1]
