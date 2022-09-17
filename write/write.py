@@ -2,6 +2,9 @@
 
 import os
 import sys
+import csv
+import signal
+
 from random import randint, choice
 from time import sleep
 from shutil import get_terminal_size
@@ -61,7 +64,7 @@ class Write:
             self.cursor_on()
 
     def wait_for_enter(self):
-        answer = input(f"")
+        answer = input("")
         del answer
 
     def are_you_sure(self):
@@ -96,6 +99,25 @@ class Write:
         data = self.read_csv("boynames")
         self.toggle_cursor()
         self.show_name(choice(data))
+        self.wait_for_enter()
+        self.toggle_cursor()
+
+    def choose_company_name(self):
+        #data = self.read_csv("companies")
+        data = []
+        col = self.colors.yel
+        res = self.colors.res
+
+        path = os.path.join(self.datadir, "companies.csv")
+        with open(path) as csvfile:
+            spamreader = csv.reader(csvfile,)
+            for row in spamreader:
+                data.append(", ".join(row))
+                #print(', '.join(row))
+        chosen = choice(data).split(', ')[1]
+
+        self.show_name(chosen)
+        self.toggle_cursor()
         self.wait_for_enter()
         self.toggle_cursor()
 
@@ -210,14 +232,70 @@ class Write:
         hourly = input(f"{yel}Wage:{res} ").lower()
         hours = input(f"{yel}Hours:{res} ").lower()
         print()
-        wages = float(hourly) * float(hours)
+        wages = round(float(hourly) * float(hours), 2)
         print(f"Earned: {gre}{wages}{res}")
         self.toggle_cursor()
         self.wait_for_enter()
         self.toggle_cursor()
 
+    def metertofeet(self):
+        rate = 3.28084
+        res = self.colors.res
+        red = self.colors.red
+        gre = self.colors.gre
+        yel = self.colors.yel
+
+        unit1 = "M"
+        unit2 = "Ft"
+        os.system("clear")
+        reply = input(f"{yel}{unit1}:{res} ").lower()
+        convert = True
+        if reply == "":
+            os.system("clear")
+            reply = input(f"{yel}{unit2}:{res} ").lower()
+            convert = False
+        if convert:
+            os.system("clear")
+            answer = round(float(reply) * rate, 2)
+            print(f"{gre}{reply} {unit1}{res} = {red}{answer} {unit2}{res}")
+        else:
+            os.system("clear")
+            answer = round(float(reply) / rate, 2)
+            print(f"{gre}{reply} {unit2}{res} = {red}{answer} {unit1}{res}")
+        self.toggle_cursor()
+        self.wait_for_enter()
+        self.toggle_cursor()
+
+    def cmtofeet(self):
+        rate = 30.48
+        res = self.colors.res
+        red = self.colors.red
+        gre = self.colors.gre
+        yel = self.colors.yel
+
+        unit1 = "Cm"
+        unit2 = "Feet"
+        os.system("clear")
+        reply = input(f"{yel}{unit1}:{res} ").lower()
+        convert = True
+        if reply == "":
+            os.system("clear")
+            reply = input(f"{yel}{unit2}:{res} ").lower()
+            convert = False
+        if convert:
+            os.system("clear")
+            answer = round(float(reply) / rate, 2)
+            print(f"{gre}{reply} {unit1}{res} = {red}{answer} {unit2}{res}")
+        else:
+            os.system("clear")
+            answer = round(float(reply) * rate, 2)
+            print(f"{gre}{reply} {unit2}{res} = {red}{answer} {unit1}{res}")
+        self.toggle_cursor()
+        self.wait_for_enter()
+        self.toggle_cursor()
+
     def cmtoinch(self):
-        rate = 2.54
+        rate = 2.63
         res = self.colors.res
         red = self.colors.red
         gre = self.colors.gre
@@ -234,11 +312,11 @@ class Write:
             convert = False
         if convert:
             os.system("clear")
-            answer = round(float(reply) / rate)
+            answer = round(float(reply) / rate, 2)
             print(f"{gre}{reply} {unit1}{res} = {red}{answer} {unit2}{res}")
         else:
             os.system("clear")
-            answer = round(float(reply) * rate)
+            answer = round(float(reply) * rate, 2)
             print(f"{gre}{reply} {unit2}{res} = {red}{answer} {unit1}{res}")
         self.toggle_cursor()
         self.wait_for_enter()
@@ -262,43 +340,16 @@ class Write:
             convert = False
         if convert:
             os.system("clear")
-            answer = round(float(reply) * rate)
+            answer = round(float(reply) * rate, 2)
             print(f"{gre}{reply} {unit1}{res} = {red}{answer} {unit2}{res}")
         else:
             os.system("clear")
-            answer = round(float(reply) / rate)
+            answer = round(float(reply) / rate, 2)
             print(f"{gre}{reply} {unit2}{res} = {red}{answer} {unit1}{res}")
         self.toggle_cursor()
         self.wait_for_enter()
         self.toggle_cursor()
 
-    def metertofeet(self):
-        rate = 3.28084
-        res = self.colors.res
-        red = self.colors.red
-        gre = self.colors.gre
-        yel = self.colors.yel
-
-        unit1 = "M"
-        unit2 = "Ft"
-        os.system("clear")
-        reply = input(f"{yel}{unit1}:{res} ").lower()
-        convert = True
-        if reply == "":
-            os.system("clear")
-            reply = input(f"{yel}{unit2}:{res} ").lower()
-            convert = False
-        if convert:
-            os.system("clear")
-            answer = round(float(reply) * rate)
-            print(f"{gre}{reply} {unit1}{res} = {red}{answer} {unit2}{res}")
-        else:
-            os.system("clear")
-            answer = round(float(reply) / rate)
-            print(f"{gre}{reply} {unit2}{res} = {red}{answer} {unit1}{res}")
-        self.toggle_cursor()
-        self.wait_for_enter()
-        self.toggle_cursor()
 
     def kmtom(self):
         rate = 0.621371
@@ -384,9 +435,10 @@ class Write:
             print(f" 3. {pin}Girl name{res}")
             print(f" 4. {blu}Boy name{res}")
             print(f" 5. {gre}Town name{res}")
-            print(f" 6. {yel}Convert{res}")
+            print(f" 6. {yel}Company name{res}")
             print()
-            print(f" 7. {cya}Edit Info{res}")
+            print(f" 7. {cya}Convert{res}")
+            print(f" 8. {pin}Edit Info{res}")
             print()
             print(f" 0. {red}Quit{res}")
             print()
@@ -406,6 +458,8 @@ class Write:
             elif reply == "5":
                 self.choose_town_name()
             elif reply == "6":
+                self.choose_company_name()
+            elif reply == "7":
                 menu_loop = False
                 self.show_convert_menu()
             elif reply == "7":
@@ -428,11 +482,12 @@ class Write:
         while convert_loop:
             os.system("clear")
             print(f" 1. {yel}Km to M{res}")
-            print(f" 2. {cya}M to Ft{res}")
-            print(f" 3. {pin}Cm to Inch{res}")
-            print(f" 4. {blu}Kg to Lbs{res}")
-            print(f" 5. {gre}C to F{res}")
-            print(f" 6. {yel}Wages{res}")
+            print(f" 2. {cya}M to Feet{res}")
+            print(f" 3. {pin}Cm to Feet{res}")
+            print(f" 4. {blu}Cm to Inch{res}")
+            print(f" 5. {gre}Kg to Lbs{res}")
+            print(f" 6. {yel}C to F{res}")
+            print(f" 7. {cya}Wages{res}")
             print()
             print(f" 0. {red}Return{res}")
             print()
@@ -446,18 +501,28 @@ class Write:
             elif reply == "2":
                 self.metertofeet()
             elif reply == "3":
-                self.cmtoinch()
+                self.cmtofeet()
             elif reply == "4":
-                self.kgtolbs()
+                self.cmtoinch()
             elif reply == "5":
-                self.ctof()
+                self.kgtolbs()
             elif reply == "6":
+                self.ctof()
+            elif reply == "7":
                 self.calculate_wages()
             else:
                 self.error("Unkown option")
 
+    def handler(self, signum, frame):
+        os.system('clear')
+        print("Ctrl-C pressed. Quick exited.")
+        exit()
+
+
     def run(self):
         loop = True
+        signal.signal(signal.SIGINT, self.handler)
+
         while loop:
             loop = self.show_menu()
         os.system("clear")

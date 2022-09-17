@@ -1,0 +1,364 @@
+#!/usr/bin/env python
+
+# ---------------------------------------------------- #
+# WallhavenDL - a simple script to download wallpapers #
+#               version 6                              #
+# ---------------------------------------------------- #
+
+import os
+import sys
+import random
+import string
+import requests
+# import re
+# import subprocess
+from time import sleep
+
+
+class Colors:
+    res = "\033[0m"
+    red = "\033[31;1m"
+    gre = "\033[32;1m"
+    yel = "\033[33;1m"
+    blu = "\033[34;1m"
+    pin = "\033[35;1m"
+    cya = "\033[36;1m"
+    whi = "\033[37;1m"
+
+
+class WallhavenDL:
+    def __init__(self):
+        self.color = Colors()
+        spc = 14 * " "
+        self.title = f"{spc}WallhavenDL v6{spc}"
+        self.query = ""
+        self.numtries = 5
+        self.general = False
+        self.anime = False
+        self.people = False
+        self.sfw = False
+        self.sketchy = False
+        self.nsfw = False
+        self.ratios = "16x9"
+        self.screenres = ""
+        self.categories = "000"
+        self.purity = "000"
+        self.apiurl = "https://wallhaven.cc/api/v1/search?"
+        self.apikey = "T52VzHkgEfpJiHTXa9KWujymq3LC2EK0"
+        self.colors = ""
+        self.sorting = "random"
+        self.order = "desc"
+        # self.download_dir = "/data/pictures/walls/downloads"
+        self.download_dir = os.getcwd()
+        self.seed = self.generate_seed()
+        self.download_list = []
+        self.image_count = 0
+
+    def generate_seed(self):
+        seed = "".join(
+            random.choices(string.ascii_letters + string.digits, k=10)
+        )
+        return seed
+
+    def print_message(self, message):
+        print(f"{self.color.yel}==>{self.color.res} {message}", end="\n")
+
+    def print_error(self, message):
+        print(f"{self.color.red}==>{self.color.res} {message}", end="\n")
+
+    def print_warning(self, message):
+        print(f"{self.color.gre}==>{self.color.res} {message}", end="\n")
+
+    def print_step(self, message, same_line=True):
+        if same_line:
+            sys.stdout.write("\033[F")  # back to previous line
+            sys.stdout.write("\033[K")  # clear line
+        print(f"{self.color.blu} ->{self.color.res} {message}")
+
+    def draw_box(self, message, double_lines=False):
+        ltop = "┌"
+        rtop = "┐"
+        lbot = "└"
+        rbot = "┘"
+        hline = "─"
+        vline = "│"
+
+        ltop2 = "╔"
+        rtop2 = "╗"
+        lbot2 = "╚"
+        rbot2 = "╝"
+        hline2 = "═"
+        vline2 = "║"
+
+        # --- split the message into lines
+        lines = message.split("//")
+
+        # --- determine the longest line
+        maxlen = 0
+        for line in lines:
+            if len(line) > maxlen:
+                maxlen = len(line)
+
+        # --- adjust the max length for two spaces in front
+        # --- and at the end of the longest line
+        maxlen = maxlen + 2
+
+        # --- create top and bottom lines
+        topline = f"{ltop}{hline * maxlen}{rtop}"
+        botline = f"{lbot}{hline * maxlen}{rbot}"
+
+        if double_lines:
+            topline = f"{ltop2}{hline2 * maxlen}{rtop2}"
+            botline = f"{lbot2}{hline2 * maxlen}{rbot2}"
+
+        # --- create the other lines
+        dlines = []
+        for idx, line in enumerate(lines):
+            col = ""
+            res = ""
+            if idx == 0:
+                col = self.color.yel
+                res = self.color.res
+
+            temp = ""
+            if len(line) < maxlen:
+                temp = ((maxlen - len(line)) // 2) * " "
+
+            dlines.append(f"{vline}{temp}{col}{line}{res}{temp}{vline}")
+            if double_lines:
+                dlines.append(f"{vline2}{temp}{col}{line}{res}{temp}{vline2}")
+
+        # --- show all the lines on the screen
+        print(topline)
+        for line in dlines:
+            print(line)
+        print(botline)
+
+    def get_string_input(self, message):
+        loop = True
+        answer = ""
+        while loop:
+            answer = input(message + " : ").lower()
+            if answer == "":
+                self.print_error("Input can't be empty!")
+            else:
+                loop = False
+        return answer
+
+    def get_yn_input(self, message, default_yes=True):
+        loop = True
+        yesno = ""
+        while loop:
+            if default_yes:
+                def_answer = f"({self.color.yel}Y{self.color.res}/n)"
+            else:
+                def_answer = f"(y/{self.color.yel}N{self.color.res})"
+
+            yesno = input(f"{message} {def_answer} : ").lower()
+            if yesno == "":
+                if default_yes:
+                    yesno = "yes"
+                else:
+                    yesno = "no"
+                loop = False
+            elif yesno not in ["y", "n", "yes", "no"]:
+                self.print_error("Answer with either yes or no!")
+            else:
+                loop = False
+
+        if yesno in ["y", "yes"]:
+            return True
+        else:
+            return False
+
+    def get_number_input(self, message):
+        loop = True
+        answer = ""
+        while loop:
+            answer = input(message + " : ").lower()
+            if answer == "":
+                answer = self.numtries
+                loop = False
+            elif not answer.strip().isdigit():
+                self.print_error("That's not a number!")
+            else:
+                loop = False
+        return int(answer)
+
+    def ask_questions(self):
+        self.needle = self.get_string_input("What do you want to search for?")
+        self.numtries = self.get_number_input(
+            f"For how many rounds? ({self.color.yel}{self.numtries}{self.color.res})"
+        )
+        print()
+        self.general = self.get_yn_input("Search in General?", default_yes=False)
+        self.anime = self.get_yn_input("Search in Anime?", default_yes=False)
+        self.people = self.get_yn_input("Search in People?", default_yes=True)
+        print()
+        self.sfw = self.get_yn_input("Search SFW images?", default_yes=False)
+        self.sketchy = self.get_yn_input("Search Sketchy images?", default_yes=False)
+        self.nsfw = self.get_yn_input("Search NSFW images?", default_yes=True)
+        print()
+        ratio = self.get_yn_input("Search for 16x9 images?", default_yes=False)
+        screenres = self.get_yn_input(
+            "Search for at least 1920x1080 images?", default_yes=False
+        )
+
+        if ratio:
+            self.ratios = "16x9"
+        else:
+            self.ratios = ""
+
+        if screenres:
+            self.screenres = "1920x1080"
+        else:
+            self.screenres = ""
+
+    def show_title(self):
+        os.system("clear")
+        self.draw_box(self.title)
+
+    # --------------------------------------- #
+    #  Abusing the Wallhaven.cc API           #
+    # ----------------------------------------#
+    def generate_api_call(self):
+        if " +" not in self.needle:
+            self.needle = self.needle.replace(" ", " +")
+        api_call = self.apiurl
+        api_call += f"apikey={self.apikey}"
+        api_call += f"&q={self.needle}"
+        api_call += f"&categories={self.categories}"
+        api_call += f"&purity={self.purity}"
+        api_call += f"&colors={self.colors}"
+        api_call += f"&order={self.order}"
+        api_call += f"&sorting={self.sorting}"
+        api_call += f"&atleast={self.screenres}"
+        api_call += f"&ratios={self.ratios}"
+        api_call += f"&seed={self.seed}"
+        return api_call
+
+    def fetch_json(self, apiurl):
+        response = requests.get(apiurl)
+        return response.json()
+
+    def fetch_image_data(self):
+        api_call = self.generate_api_call()
+        data = self.fetch_json(api_call)["data"]
+        return data
+
+    def already_downloaded(self, url):
+        filename = self.get_filename(url)
+        path = os.path.join(self.download_dir, filename)
+        if os.path.isfile(path):
+            return True
+        else:
+            return False
+
+    def generate_download_list(self):
+        count = 1
+        skipped = 0
+        self.download_list = []
+        data = self.fetch_image_data()
+        if len(data) < 24:
+            self.numtries = 1
+
+        while count <= self.numtries:
+            for d in data:
+                url = d["path"]
+                if url not in self.download_list and not self.already_downloaded(url):
+                    self.download_list.append(url)
+                else:
+                    skipped += 1
+
+            # --- Rinse and repeat
+            count += 1
+            data = self.fetch_image_data()
+
+        if skipped > 0:
+            self.print_step(f"{skipped} images skipped...", same_line=False)
+
+    def get_filename(self, url):
+        filename = url.replace("https://", "").split("/")[-1]
+        return filename
+
+    def write_image(self, image_url, filename):
+        path = os.path.join(self.download_dir, filename)
+        img_data = requests.get(image_url).content
+        with open(path, "wb") as handler:
+            handler.write(img_data)
+        return True
+
+    def download_images(self):
+        maximg = len(self.download_list)
+        for c, url in enumerate(self.download_list):
+            filename = self.get_filename(url)
+            self.write_image(url, filename)
+            self.print_step(f"{c + 1:02d}/{maximg:02d} {filename}")
+
+    def show_info(self):
+        catmsg = "GENERAL ANIME PEOPLE"
+        purmsg = "SFW SKETCHY NSFW"
+        hline = (len(self.title) + 2) * "─"
+
+        if not self.general:
+            catmsg = catmsg.replace("GENERAL ", "")
+
+        if not self.anime:
+            catmsg = catmsg.replace("ANIME ", "")
+
+        if not self.people:
+            catmsg = catmsg.replace(" PEOPLE", "")
+
+        if not self.sfw:
+            purmsg = purmsg.replace("SFW ", "")
+
+        if not self.sketchy:
+            purmsg = purmsg.replace("SKETCHY ", "")
+
+        if not self.nsfw:
+            purmsg = purmsg.replace(" NSFW", "")
+
+        info_lines = [
+            f"     Query : {self.needle}",
+            f"Categories : {catmsg}",
+            f"    Purity : {purmsg}",
+        ]
+
+        for line in info_lines:
+            print(f"\t{line}")
+        print(f" {hline}")
+
+    def process(self):
+        self.show_title()
+        self.show_info()
+        self.print_message("Generating download list...")
+        self.generate_download_list()
+        if len(self.download_list) > 0:
+            self.print_message("Downloading images...")
+            print()
+            self.download_images()
+            self.print_message("Done")
+            sleep(2)
+        else:
+            self.print_error("No results found...")
+            sleep(4)
+
+    def run(self):
+        mainloop = True
+        default_tries = self.numtries
+
+        while mainloop:
+            self.show_title()
+            self.ask_questions()
+            self.process()
+            self.show_title()
+            mainloop = self.get_yn_input("Another try?", default_yes=True)
+            self.numtries = default_tries
+
+        os.system("clear")
+        print("Bye...")
+
+
+if __name__ == "__main__":
+    wdl = WallhavenDL()
+    wdl.run()

@@ -1,7 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os, sys
 import toml
+import shutil
 
 from subprocess import getoutput, Popen, PIPE
 from random import randint, choice
@@ -24,6 +25,10 @@ class Colors:
 class TUI:
     def __init__(self):
         self.color = Colors()
+        self.title = self.set_title()
+
+    def set_title(self):
+        return "Waller v2.081//Copyright © 2020-2022 Transgirl"
 
     def clear(self):
         os.system("clear")
@@ -90,6 +95,12 @@ class TUI:
     def info(self, message):
         print(f"{message}")
 
+    def subtitle(self, message):
+        col = self.color.yel
+        blu = self.color.blu
+        res = self.color.res
+        print(f"{blu}>> {col}{message}{res}")
+
     def message(self, message):
         col = self.color.gre
         res = self.color.res
@@ -121,6 +132,42 @@ class TUI:
         else:
             switch = f"[{red}OFF{res}]"
         return switch
+
+    def show_help(self):
+        options = [
+                "next\t\tShow the next wallpaper",
+                "previous\tShow the previous wallpaper ('prev' is also allowed)",
+                "",
+                "id\t\tShow mininal info on the current wallpaper",
+                "info\t\tShow extensive info on thecurrent wallpaper",
+                "",
+                "auto\t\tToggle automatic change of wallpaper",
+                "grub\t\tToggle changing of the GRUB wallpaper",
+                "sddm\t\tToggle changing of the SDDM wallpaper",
+                "both\t\tToggle changing of both GRUB and SDDM wallapers"
+                "random\t\tToggle random choice of wallpaper (changes current wallpaper)",
+                "",
+                "folder\t\tChange the folder where the wallpapers are located",
+                "refresh\t\tRefresh the currently used wallpaper",
+                "",
+                "backup\t\tCreate a backup of the current wallpaper",
+                "restore\t\tRestore the backed up version of the current wallpaper",
+                "",
+                "help\t\tShow this help, duh"
+                ]
+        self.clear()
+        self.draw_box(self.title, color="yel", titler=True)
+        print()
+        print("Waller is a simple script to help you set wallpapers.")
+        print("Configuration file is: ~/.config/waller/waller.toml")
+        print()
+        print("Usage:")
+        print("\twaller <option>")
+        print("\tIf no option is given 'next' will be presumed.")
+        print()
+        print("Options:")
+        for option in options:
+            print(f"\t{option}")
 
 
 class FileIO:
@@ -160,7 +207,11 @@ class Utils:
         self.wallpapers = self.fileio.gather_all_wallpapers(
             self.construct_path2wallpapers()
         )
-        self.title = "Waller v2.03 //Copyright © 2020-2022 Transgirl"
+        self.title = self.tui.set_title()
+
+    def restore_wallpaper(self):
+        feh = os.path.join(os.path.expanduser("~"), ".fehbg")
+        os.system(feh)
 
     def get_output(self, command):
         output = getoutput(command)
@@ -191,43 +242,50 @@ class Utils:
             grub_command = f"<COMMAND> {curwall} {grubpath}".replace("<COMMAND>", cmd)
             self.execute_root_command(grub_command)
 
+    def show_systemd_status(self):
+        cmd = "systemctl --user status wallpaper.timer"
+        os.system(cmd)
+        print()
+        cmd = "systemctl --user status wallpaper.service"
+        os.system(cmd)
+
     def get_timer_time_left(self):
         gre = self.color.gre
         red = self.color.red
         res = self.color.res
-        output = self.get_output("systemctl --user status wallpaper.timer").split(" ")
         # --- check for possible times
+        output = self.get_output("systemctl --user status wallpaper.timer")
+        output = output.split(" ")
+        # leftidx = output.index["left\n"]
         weeks, days, hours, minutes = "", "", "", ""
         for idx, line in enumerate(output):
-            if "week" in line:
-                weeks = output[idx -1] + "w "
+            # if "week" in line:
+            #    weeks = output[idx -1] + "w "
 
-            if "day" in line:
-                days = output[idx - 1] + "d "
+            # if "day" in line:
+            #    days = output[idx - 1] + "d "
 
             if "left\n" in output:
                 idx = output.index("left\n") - 1
                 if "min" in output[idx]:
                     minutes = output[idx]
-                    hours = output[idx - 2]
+                    hours = output[idx - 1] + " "
+                    if "CEST" in hours:
+                        hours = ""
                 elif "h" in output[idx]:
                     hours = output[idx]
+                else:
+                    hours = ""
 
         timeleft = f"{weeks}{days}{hours}{minutes}"
         if "left\n" in output:
-            return f"{gre}{timeleft}{res}"
+            result = f"{gre}{timeleft}{res}"
         else:
-            return f"{red}disabled{res}"
+            result = f"{red}disabled{res}"
+            self.config['auto'] = False
+            self.fileio.save_config(self.config)
 
-        #if "left\n" in output:
-        #    idx = output.index("left\n") - 1
-        #    timeleft = output[idx]
-        #    if "min" in timeleft:
-        #        idx = output.index("left\n") - 2
-        #        timeleft = output[idx] + " " + timeleft
-        #    return f"{gre}{timeleft}{res}"
-        #else:
-        #    return f"{red}disabled{res}"
+        return result
 
     def get_current_number(self, wallpaper):
         number = wallpaper.split(".")[0].split("-")[1]
@@ -300,8 +358,12 @@ class Utils:
         self.set_wallpaper()
 
     def choose_random_wallpaper(self):
-        new_wallpaper = choice(self.wallpapers)
-        self.config["curwall"] = new_wallpaper
+        self.config["curwall"] = choice(self.wallpapers)
+        if self.config['random']:
+            self.config['random'] = False
+        else:
+            self.config['random'] = True
+
         self.fileio.save_config(self.config)
         self.set_wallpaper()
 
@@ -322,7 +384,8 @@ class Utils:
         self.show_long_info()
 
     def toggle_auto_change(self):
-        command = "systemctl --user <COMMAND> --now wallpaper.timer >/dev/null 2>&1"
+        command = "systemctl --user <COMMAND> --now wallpaper.timer "
+        command += ">/dev/null 2>&1"
         if self.config["auto"]:
             self.config["auto"] = False
             command = command.replace("<COMMAND>", "disable")
@@ -332,7 +395,8 @@ class Utils:
         os.system(command)
         self.fileio.save_config(self.config)
         self.tui.notice(
-            "Giving 'systemctl' some time to process change ...", secs_to_wait=2
+            "Giving 'systemctl' some time to process change ...",
+            secs_to_wait=2
         )
         self.show_long_info()
 
@@ -380,13 +444,14 @@ class Utils:
 
         self.tui.clear()
         self.tui.draw_box(self.title, color="yel", titler=True)
-        self.tui.message("Wallpaper information:")
+        print()
+        self.tui.subtitle("Wallpaper information:")
         self.tui.info(f"Current wallpaper  : {gre}{curwall}{res}")
         if self.config["auto"]:
             timeleft = self.get_timer_time_left()
             self.tui.info(f"Time left          : {timeleft}")
         print()
-        self.tui.message("Configuration:")
+        self.tui.subtitle("Configuration:")
         self.tui.info(f"Wallpaper setter   : {gre}{setter}{res}")
         self.tui.info(f"Wallpaper folder   : {gre}{walldir}{res}")
         self.tui.info(f"Wallpaper style    : {gre}{style}{res}")
@@ -394,16 +459,45 @@ class Utils:
         self.tui.info(f"Total wallpapers   : {gre}{total}{res}")
 
         print()
-        self.tui.message("Switches:")
+        self.tui.subtitle("Switches:")
         self.tui.info(f"Auto wallpaper change : {auto_switch}")
         self.tui.info(f"Randomize wallpaper   : {random_switch}")
         self.tui.info(f"Change SDDM wallpaper : {sddm_switch}")
         self.tui.info(f"Change GRUB wallpaper : {grub_switch}")
 
+    def open_in_gimp(self):
+        path = self.construct_wallpaperpath()
+        os.system(f"gimp {path}")
+        self.restore_wallpaper()
+        self.change_sddm_grub_wallpapers()
+
+    def create_backup(self):
+        original = self.construct_wallpaperpath()
+        backup = original + ".backup"
+        # cmd = f"cp {original} {backup}"
+        shutil.copyfile(original, backup)
+        self.tui.message("Current wallpaper backed up.")
+
+    def restore_backup(self):
+        original = self.construct_wallpaperpath()
+        backup = original + ".backup"
+        # --- remove the backed up wallpaper first
+        os.remove(original)
+        shutil.move(backup, original)
+        self.restore_wallpaper()
+        self.change_sddm_grub_wallpapers()
+
+    def change_path(self, path=""):
+        if path == "":
+            path = self.config["category"]
+            self.change_wallpaper_folder(path)
+            self.choose_next_wallpaper()
+
 
 class Waller:
     def __init__(self):
         self.utils = Utils()
+        self.tui = TUI()
 
     def run(self, arg):
         if "folder=" in arg:
@@ -411,31 +505,38 @@ class Waller:
             arg = "folder"
         else:
             path = ""
-        match arg:
-            case "next":
+            if arg == "next":
                 self.utils.choose_next_wallpaper()
-            case "previous" | "prev":
+            elif arg in ['previous', 'prev']:
                 self.utils.choose_previous_wallpaper()
-            case "random":
-                self.utils.choose_random_wallpaper()
-            case "id":
+            elif arg == "refresh":
+                self.utils.restore_wallpaper()
+            elif arg == "id":
                 self.utils.show_short_info()
-            case "info":
+            elif arg == "info":
                 self.utils.show_long_info()
-            case "auto":
+            elif arg == "auto":
                 self.utils.toggle_auto_change()
-            case "grub":
+            elif arg == "grub":
                 self.utils.toggle_grub_change()
-            case "sddm":
+            elif arg == "sddm":
                 self.utils.toggle_sddm_change()
-            case "folder":
-                if path == "":
-                    path = self.utils.config["category"]
-                self.utils.change_wallpaper_folder(path)
-                self.utils.choose_next_wallpaper()
-            case _:
-                print(f"ERROR: {arg}")
-                print("You will have to be clearer than that, I'm afraid...")
+            elif arg == "both":
+                self.utils.toggle_sddm_change()
+                sleep(0.6)
+                self.utils.toggle_grub_change()
+            elif arg == "status":
+                self.utils.show_systemd_status()
+            elif arg == "open":
+                self.utils.open_in_gimp()
+            elif arg == "backup":
+                self.utils.create_backup()
+            elif arg == "folder":
+                self.utils.change_path(path)
+            elif arg == "help":
+                self.tui.show_help()
+            else:
+                print("You will have to be clearer that that, I'm afraid.")
                 exit()
 
 

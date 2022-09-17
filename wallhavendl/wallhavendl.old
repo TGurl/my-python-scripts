@@ -1,0 +1,324 @@
+#!/usr/bin/env python3
+
+
+import os
+import sys
+import string
+import random
+import requests
+
+from time import sleep
+
+
+class Colors:
+    res = "\033[0m"
+    red = "\033[31;1m"
+    gre = "\033[32;1m"
+    yel = "\033[33;1m"
+    blu = "\033[34;1m"
+    pin = "\033[35;1m"
+    cya = "\033[36;1m"
+    whi = "\033[37;1m"
+
+
+class TUI:
+    def __init__(self) -> None:
+        self.color = Colors()
+        self.title = "WallhavenDL v7//Copyright 2022 Transgirl"
+
+    def draw_box(self, message="", double_lines=False):
+        ltop = "┌"
+        rtop = "┐"
+        lbot = "└"
+        rbot = "┘"
+        hline = "─"
+        vline = "│"
+
+        ltop2 = "╔"
+        rtop2 = "╗"
+        lbot2 = "╚"
+        rbot2 = "╝"
+        hline2 = "═"
+        vline2 = "║"
+
+        # --- If the message is empty use the title
+        if message == "":
+            message = self.title
+
+        # --- split the message into lines
+        lines = message.split("//")
+
+        # --- determine the longest line
+        maxlen = 0
+        for line in lines:
+            if len(line) > maxlen:
+                maxlen = len(line)
+
+        # --- adjust the max length for two spaces in front
+        # --- and at the end of the longest line
+        maxlen = maxlen + 2
+
+        # --- create top and bottom lines
+        topline = f"{ltop}{hline * maxlen}{rtop}"
+        botline = f"{lbot}{hline * maxlen}{rbot}"
+
+        if double_lines:
+            topline = f"{ltop2}{hline2 * maxlen}{rtop2}"
+            botline = f"{lbot2}{hline2 * maxlen}{rbot2}"
+
+        # --- create the other lines
+        dlines = []
+        for idx, line in enumerate(lines):
+            col = ""
+            res = ""
+            if idx == 0:
+                col = self.color.yel
+                res = self.color.res
+
+            temp = ""
+            if len(line) < maxlen:
+                temp = ((maxlen - len(line)) // 2) * " "
+
+            dlines.append(f"{vline}{temp}{col}{line}{res}{temp}{vline}")
+            if double_lines:
+                dlines.append(f"{vline2}{temp}{col}{line}{res}{temp}{vline2}")
+
+        # --- show all the lines on the screen
+        print(topline)
+        for line in dlines:
+            print(line)
+        print(botline)
+
+    def print_message(self, message):
+        col = self.color.gre
+        res = self.color.res
+        print(f"{col}>>{res} {message}")
+
+    def print_error(self, message):
+        col = self.color.red
+        res = self.color.res
+        print(f"{col}  >>{res} {message}")
+        print()
+
+    def print_warning(self, message):
+        col = self.color.yel
+        res = self.color.res
+        print(f"{col}>>{res} {message}")
+
+    def print_step(self, message, same_line=True):
+        if same_line:
+            sys.stdout.write("\033[F")  # back to previous line
+            sys.stdout.write("\033[K")  # clear line
+        print(f"{self.color.blu} ->{self.color.res} {message}")
+
+    def getInput(self, message):
+        col = self.color.gre
+        res = self.color.res
+        result = input(f"{col}>>{res} {message} : ").lower()
+        return result
+
+    def getYN(self, message, default_yes=True):
+        valid = ['y', 'n', 'yes', 'no']
+        col = self.color.gre
+        res = self.color.res
+        subloop = True
+        result = 'n'
+
+        yescolor = self.color.res
+        nocolor = self.color.res
+
+        if default_yes:
+            yescolor = self.color.yel
+            default = True
+            prompt = f"({yescolor}y{res}/{nocolor}n{res})"
+        else:
+            nocolor = self.color.yel
+            default = False
+            prompt = f"({yescolor}y{res}/{nocolor}n{res})"
+
+        while subloop:
+            result = input(f"{col}>>{res} {message} {prompt} ? ").lower()
+            if result == "":
+                return default
+            elif result not in valid:
+                self.print_error("Please use either yes or no!")
+            else:
+                subloop = False
+
+        if result in ['y', 'yes']:
+            return True
+        else:
+            return False
+
+
+class WallhavenDL:
+    def __init__(self) -> None:
+        self.tui = TUI()
+        self.color = Colors()
+        self.apiurl = "https://wallhaven.cc/api/v1/search?"
+        self.apikey = "T52VzHkgEfpJiHTXa9KWujymq3LC2EK0"
+        self.download_dir = "/data/pictures/downloads/wallhaven"
+        self.query = ""
+        self.numtries = 5
+        self.general = False
+        self.anime = False
+        self.people = False
+        self.sfw = False
+        self.sketchy = False
+        self.nsfw = False
+        self.ratios = "16x9"
+        self.screeenres = ""
+        self.colors = ""
+        self.categories = "000"
+        self.purity = "000"
+        self.sorting = "random"
+        self.order = "desc"
+        self.seed = ""
+        self.download_list = []
+
+    def generate_seed(self):
+        seed = "".join(
+            random.choices(string.ascii_letters + string.digits, k=10)
+        )
+        return seed
+
+    def set_purity(self):
+        purity = ["0", "0", "0"]
+        if self.sfw:
+            purity[0] = "1"
+        if self.sketchy:
+            purity[1] = "1"
+        if self.nsfw:
+            purity[2] = "1"
+        return "".join(purity)
+
+    def set_categories(self):
+        cats = ["0", "0", "0"]
+        if self.general:
+            cats[0] = "1"
+        if self.anime:
+            cats[1] = "1"
+        if self.people:
+            cats[2] = "1"
+        return "".join(cats)
+
+    def fill_questionaire(self):
+        col = self.color.gre
+        res = self.color.res
+        self.seed = self.generate_seed()
+        self.query = self.tui.getInput("Search for")
+        numtries = self.tui.getInput("For how many rounds (5)")
+        if numtries != "":
+            self.numtries = int(numtries)
+        print()
+        self.general = self.tui.getYN(
+            f"Search in {col}General{res}",
+            default_yes=False)
+        self.anime = self.tui.getYN(
+            f"Search in {col}Anime{res}",
+            default_yes=False)
+        self.people = self.tui.getYN(f"Search in {col}People{res}")
+        print()
+        self.sfw = self.tui.getYN(
+            f"Search in {col}SFW{res}",
+            default_yes=False)
+        self.sketchy = self.tui.getYN(
+            f"Search in {col}Sketchy{res}",
+            default_yes=False)
+        self.nsfw = self.tui.getYN(f"Search in {col}NSFW{res}")
+        print()
+
+        ratios = self.tui.getYN("Search only 16x9")
+        if ratios:
+            self.ratios = "16x9"
+
+        screenres = self.tui.getYN("Search only 1920x1080")
+        if screenres:
+            self.screenres = "1920x1080"
+        else:
+            self.screenres = ""
+
+    def generate_api_call(self):
+        if " +" not in self.query:
+            self.needle = self.query.replace(" ", " +")
+        api_call = self.apiurl
+        api_call += f"apikey={self.apikey}"
+        api_call += f"&q={self.needle}"
+        api_call += f"&categories={self.categories}"
+        api_call += f"&purity={self.purity}"
+        api_call += f"&colors={self.colors}"
+        api_call += f"&order={self.order}"
+        api_call += f"&sorting={self.sorting}"
+        api_call += f"&atleast={self.screenres}"
+        api_call += f"&ratios={self.ratios}"
+        api_call += f"&seed={self.seed}"
+        return api_call
+
+    def get_list_images_to_download(self):
+        apiurl = self.generate_api_call()
+        return requests.get(apiurl).json()["data"]
+
+    def check_if_file_exists(self, filename):
+        path = os.path.join(self.download_dir, filename)
+        return os.path.exists(path)
+
+    def generate_download_list(self):
+        count = 1
+        skipped = 0
+        self.download_list = []
+        data = self.get_list_images_to_download()
+
+        num_images = len(data)
+
+        os.system('clear')
+        self.tui.draw_box()
+        self.tui.print_message("Searching...")
+        print()
+        if num_images < 24:
+            self.numtries = 1
+
+        while count <= self.numtries:
+            self.tui.print_step(f"Round {count} of {self.numtries} => Skipped: {skipped}")
+            for d in data:
+                url = d['path']
+                filename = url.replace("https://", "").split("/")[-1]
+                file_exists = self.check_if_file_exists(filename)
+                if url not in self.download_list and not file_exists:
+                    self.download_list.append(url)
+                else:
+                    skipped += 1
+            count += 1
+            data = self.get_list_images_to_download()
+
+    def write_image(self, image_url, filename):
+        path = os.path.join(self.download_dir, filename)
+        img_data = requests.get(image_url).content
+        with open(path, "wb") as handler:
+            handler.write(img_data)
+        return True
+
+    def download_images(self):
+        maximages = len(self.download_list)
+        for c, url in enumerate(self.download_list):
+            os.system('clear')
+            self.tui.draw_box()
+            self.tui.print_message(f"Downloading {maximages} images ...")
+            print()
+            filename = url.replace("https://", "").split("/")[-1]
+            self.tui.print_step(f"{c+1:02}/{maximages:02} {filename}")
+            self.write_image(url, filename)
+
+    def run(self):
+        os.system('clear')
+        self.tui.draw_box()
+        self.fill_questionaire()
+        self.categories = self.set_categories()
+        self.purity = self.set_purity()
+        self.get_list_images_to_download()
+        self.generate_download_list()
+        self.download_images()
+
+
+if __name__ == "__main__":
+    wdl = WallhavenDL()
+    wdl.run()

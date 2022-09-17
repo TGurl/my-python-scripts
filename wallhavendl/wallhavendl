@@ -1,0 +1,486 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import random
+import string
+import requests
+import signal
+
+from shutil import get_terminal_size
+
+
+# -------------------------------------------------------
+# --- Class Colors
+# -------------------------------------------------------
+class Colors:
+    res = "\033[0m"
+    bla = "\033[30;1m"
+    red = "\033[31;1m"
+    gre = "\033[32;1m"
+    yel = "\033[33;1m"
+    blu = "\033[34;1m"
+    pin = "\033[35;1m"
+    cya = "\033[36;1m"
+    whi = "\033[37;1m"
+    gray = "\033[37m"
+
+
+# -------------------------------------------------------
+# --- Class Terminal User Interface (TUI)
+# -------------------------------------------------------
+class TUI:
+    def __init__(self) -> None:
+        self.colors = Colors()
+        self.prompt1 = "›"
+        self.prompt2 = "»"
+        self.title = "WallhavenDL v7"
+        self.term_width = get_terminal_size().columns
+
+    def draw_title_bar(self):
+        if self.term_width > 66:
+            self.term_width = 66
+
+        col = self.colors.yel
+        col2 = self.colors.cya
+        res = self.colors.res
+        length = len(self.title) + 2
+        line = ((self.term_width - length) // 2) * "─"
+        print(f"{col}{line} {col2}{self.title} {col}{line}{res}")
+        # print()
+
+    def draw_line(self):
+        col = self.colors.yel
+        res = self.colors.res
+        line = self.term_width * "─"
+        print(f"{col}{line}{res}", end="\n")
+
+    def hide_cursor(self):
+        sys.stdout.write("\033[?25l")
+        sys.stdout.flush()
+
+    def show_cursor(self):
+        sys.stdout.write("\033[?25h")
+        sys.stdout.flush()
+
+    def cprint(self, message):
+        spaces = ((self.term_width - len(message)) // 2) * " "
+        print(f"{spaces}{message}")
+
+    def print_message(self, message, error=False, warning=False):
+        col = self.colors.gre
+        res = self.colors.res
+        if error:
+            col = self.colors.red
+            pr = self.prompt1
+        elif warning:
+            col = self.colors.yel
+            pr = self.prompt1
+        else:
+            pr = self.prompt2
+        print(f"{col}{pr}{res} {message}")
+        if error:
+            self.show_cursor()
+
+    def print_systemerror_and_exit(self, function, message):
+        self.print_message(
+            f"ERROR: {function} => {message} Exiting...",
+            error=True)
+        exit()
+
+    def progress_bar(self, current,
+                     maximum,
+                     length=20,
+                     show_prefix=True,
+                     fancy=False):
+        res = self.colors.res
+        gre = self.colors.gre
+
+        if fancy:
+            bg = self.colors.blu
+            fg = self.colors.yel
+            emptychar = "░"
+            fillchar = "█"
+        else:
+            bg = self.colors.gray
+            fg = self.colors.whi
+            emptychar = "."
+            fillchar = "#"
+
+        prompt = f"{gre}{self.prompt1}{res}"
+        move_up = "\033[F"
+        clear_line = "\033[K"
+
+        percent = (100 * (current / float(maximum)))
+        filled = int(length * current // maximum)
+        filler = emptychar * (length - filled)
+        bar = fillchar * filled
+        sys.stdout.write(move_up)
+        sys.stdout.write(clear_line)
+        p = round(percent)
+        if show_prefix:
+            # prefix = f"{prompt} {current:05}/{maximum:05} "
+            prefix = f"{prompt} "
+        else:
+            prefix = ""
+        print(f"{prefix}{fg}{bar}{bg}{filler}{res} {p:3}%")
+
+
+# -------------------------------------------------------
+# --- Class UserInput
+# -------------------------------------------------------
+class UserInput:
+    def __init__(self) -> None:
+        self.colors = Colors()
+        self.tui = TUI()
+
+    def getInput(self, message):
+        return input(message).lower()
+
+    def getYN(self, message, default_yes=True):
+        col = self.colors.gre
+        res = self.colors.res
+        if default_yes:
+            prompt = f"{message} ({col}Y{res}/n) ? :"
+            default = True
+        else:
+            prompt = f"{message} (y/{col}N{res}) ? :"
+            default = False
+        result = input(prompt).lower()
+        if result == "":
+            return default
+        elif result not in ["y", "n", "yes", "no"]:
+            self.tui.print_message("Please use either 'y' or 'n'", error=True)
+        else:
+            if result in ["y", "yes"]:
+                return True
+            else:
+                return False
+
+
+# -------------------------------------------------------
+# --- Class WallhavenDL - the main class
+# -------------------------------------------------------
+class WallhavenDL:
+    def __init__(self) -> None:
+        self.tui = TUI()
+        self.colors = Colors()
+        self.ui = UserInput()
+        self.apiurl = "https://wallhaven.cc/api/v1/search?"
+        self.apikey = "T52VzHkgEfpJiHTXa9KWujymq3LC2EK0"
+        self.download_dir = "/data/pictures/downloads/wallhaven"
+        self.categories = "000"
+        self.purity = "000"
+        self.rounds = 5
+        self.general = False
+        self.anime = False
+        self.people = False
+        self.sfw = False
+        self.sketchy = False
+        self.nsfw = False
+        self.ratio = ""
+        self.screenres = ""
+        self.seed = ""
+        self.query = ""
+        self.color = ""
+        self.sorting = "random"
+        self.order = "desc"
+        self.wh_list = []
+
+    # -------------------------------------------------------
+    # --- Change the settings
+    # -------------------------------------------------------
+    def set_order(self):
+        if self.order == "desc":
+            self.order = "asc"
+        else:
+            self.order = "desc"
+
+    def set_categories(self):
+        cats = ["0", "0", "0"]
+        if self.general:
+            cats[0] = "1"
+        if self.anime:
+            cats[1] = "1"
+        if self.people:
+            cats[2] = "1"
+        return "".join(cats)
+
+    def set_purity(self):
+        purity = ["0", "0", "0"]
+        if self.sfw:
+            purity[0] = "1"
+        if self.sketchy:
+            purity[1] = "1"
+        if self.nsfw:
+            purity[2] = "1"
+        return "".join(purity)
+
+    def generate_seed(self):
+        seed = "".join(
+            random.choices(string.ascii_letters + string.digits, k=10)
+        )
+        return seed
+
+    # -------------------------------------------------------
+    # --- Show some information on screen
+    # -------------------------------------------------------
+    def show_info(self):
+        gre = self.colors.gre
+        red = self.colors.red
+        res = self.colors.res
+        # --- maximum length if info lines = 32
+        termwidth = get_terminal_size().columns
+        if termwidth <= 47:
+            spaces = ""
+        else:
+            spaces = 15 * " "
+
+        true_prompt = f"{gre}True{res}"
+        false_prompt = f"{red}False{res}"
+
+        general = false_prompt
+        anime = false_prompt
+        people = false_prompt
+        sfw = false_prompt
+        sketchy = false_prompt
+        nsfw = false_prompt
+
+        if self.general:
+            general = true_prompt
+
+        if self.anime:
+            anime = true_prompt
+
+        if self.people:
+            people = true_prompt
+
+        if self.sfw:
+            sfw = true_prompt
+
+        if self.sketchy:
+            sketchy = true_prompt
+
+        if self.nsfw:
+            nsfw = true_prompt
+
+        q = self.query
+        sr = self.screenres
+        ra = self.ratio
+        if sr == "":
+            sr = "All"
+        if ra == "":
+            ra = "All"
+        print(f"{spaces}Searching for : {gre}{q}{res}")
+        print(f"{spaces}Dimensions    : {gre}{sr}{res}")
+        print(f"{spaces}Resolution    : {gre}{ra}{res}")
+        line1 = f"{spaces}General : {general}\tSFW     : {sfw}"
+        line2 = f"{spaces}Anime   : {anime}\tSketchy : {sketchy}"
+        line3 = f"{spaces}People  : {people}\tNSFW    : {nsfw}"
+        print()
+        print(line1)
+        print(line2)
+        print(line3)
+
+    # -------------------------------------------------------
+    # --- Abusing the Wallhaven.cc API
+    # -------------------------------------------------------
+    def generate_api_call(self):
+        query = self.query
+        if "+" not in query:
+            query = query.replace(" ", "+")
+        query = "+" + query
+        api_call = self.apiurl
+        api_call += f"apikey={self.apikey}"
+        api_call += f"&q={query}"
+        api_call += f"&categories={self.categories}"
+        api_call += f"&purity={self.purity}"
+        api_call += f"&colors={self.color}"
+        api_call += f"&order={self.order}"
+        api_call += f"&sorting={self.sorting}"
+        api_call += f"&atleast={self.screenres}"
+        api_call += f"&ratios={self.ratio}"
+        api_call += f"&seed={self.seed}"
+        return api_call
+
+    def fetch_json(self, apiurl):
+        response = requests.get(apiurl)
+        return response.json()
+
+    def fetch_image_data(self):
+        api_call = self.generate_api_call()
+        data = self.fetch_json(api_call)["data"]
+        return data
+
+    def write_image(self, img_url, filename):
+        path = os.path.join(self.download_dir, filename)
+        img_data = requests.get(img_url).content
+        with open(path, "wb") as f:
+            f.write(img_data)
+        return True
+
+    # -------------------------------------------------------
+    # --- Download functions
+    # -------------------------------------------------------
+    def check_if_already_downloaded(self, url):
+        filename = url.replace("https://", "").split("/")[-1]
+        path = os.path.join(self.download_dir, filename)
+        if os.path.exists(path):
+            return True
+        else:
+            return False
+
+    def generate_download_list(self):
+        count = 1
+        skipped = 0
+        self.wh_list = []
+        data = self.fetch_image_data()
+        if len(data) < 24:
+            self.rounds = 1
+
+        while count <= self.rounds:
+            for d in data:
+                url = d["path"]
+                img_exists = self.check_if_already_downloaded(url)
+                if url not in self.wh_list and not img_exists:
+                    self.wh_list.append(url)
+                else:
+                    skipped += 1
+            # --- Rinse and repeat
+            count += 1
+            data = self.fetch_image_data()
+
+        # --- set number of rounds back to 5
+        self.rounds = 5
+
+    def download_wallpapers(self):
+        total = len(self.wh_list)
+        # --- check length download list
+        if len(self.wh_list) == 0:
+            self.tui.show_cursor()
+            self.tui.print_message(
+                "Sorry, your query didn't match any wallpapers...",
+                error=True
+            )
+        else:
+            print()
+            for c, url in enumerate(self.wh_list):
+                filename = url.replace("https://", "").split("/")[-1]
+                self.write_image(url, filename)
+                self.tui.progress_bar(c + 1, total, fancy=True)
+            self.tui.progress_bar(total, total, fancy=True)
+            self.tui.print_message("Done!")
+            self.tui.show_cursor()
+
+    # -------------------------------------------------------
+    # --- The main loop
+    # -------------------------------------------------------
+    def handler(self, signum, frame):
+        print()
+        self.tui.print_message(
+            "CTRL+C detected. Exiting...",
+            error=True
+        )
+        self.tui.show_cursor()
+        exit()
+
+    def show_questionaire(self):
+        gre = self.colors.gre
+        res = self.colors.res
+        os.system('clear')
+        self.tui.draw_title_bar()
+        self.tui.cprint("A simple Wallhaven.cc download script")
+        self.tui.draw_line()
+        # --- generate a new seed with every run
+        self.seed = self.generate_seed()
+
+        self.query = self.ui.getInput(
+            # -------------------------#
+            "Give term to search for   : "
+        )
+        if self.query == "":
+            self.tui.print_message(
+                "Sorry, a query cannot be empty!",
+                error=True)
+
+        rounds = self.ui.getInput(
+            f"For how many rounds ({gre}{self.rounds}{res}) ? : "
+        )
+        if rounds != "":
+            self.rounds = int(rounds)
+        print()
+        self.general = self.ui.getYN("Search in General", default_yes=False)
+        self.anime = self.ui.getYN("Search in Anime  ", default_yes=False)
+        self.people = self.ui.getYN("Search in People ", default_yes=True)
+        self.categories = self.set_categories()
+        print()
+        self.sfw = self.ui.getYN("Search in SFW    ", default_yes=False)
+        self.sketchy = self.ui.getYN("Search in SKETCHY", default_yes=False)
+        self.nsfw = self.ui.getYN("Search in NSFW   ", default_yes=True)
+        self.purity = self.set_purity()
+        print()
+        ratio = self.ui.getYN(
+            "Search only for 16x9 images",
+            default_yes=True)
+        screenres = self.ui.getYN(
+            "At least 1920x1080 images  ",
+            default_yes=True
+        )
+        if ratio:
+            self.ratio = "16x9"
+
+        if screenres:
+            self.screenres = "1920x1080"
+            self.ratio = "16x9"
+
+    def create_download_list(self):
+        os.system('clear')
+        self.tui.hide_cursor()
+        self.tui.draw_title_bar()
+        self.show_info()
+        self.tui.draw_line()
+        self.tui.print_message("Querying Wallhaven.cc...")
+        self.tui.print_message(
+            "This can take a while, please wait...",
+            warning=True
+        )
+        self.generate_download_list()
+        self.tui.show_cursor()
+
+    def execute_downloads(self):
+        total = len(self.wh_list)
+        os.system('clear')
+        self.tui.hide_cursor()
+        self.tui.draw_title_bar()
+        self.show_info()
+        self.tui.draw_line()
+        self.tui.print_message(
+            f"Downloading {total} images..."
+        )
+        # --- create an extra white line for the progressbar
+        self.download_wallpapers()
+        self.tui.show_cursor()
+
+    def run(self) -> None:
+        signal.signal(signal.SIGINT, self.handler)
+        mainloop = True
+        while mainloop:
+            self.show_questionaire()
+            self.create_download_list()
+            self.execute_downloads()
+            print()
+            answer = self.ui.getYN(
+                "Want to do another search"
+            )
+            if not answer:
+                mainloop = False
+        os.system('clear')
+        self.tui.print_message("Thanks for using WallhavenDL")
+
+
+# -------------------------------------------------------
+# --- Detect run of script and call WallhavenDL.run()
+# -------------------------------------------------------
+if __name__ == "__main__":
+    wdl = WallhavenDL()
+    wdl.run()
