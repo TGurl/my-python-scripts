@@ -28,31 +28,31 @@ class TUI:
         self.title = self.set_title()
 
     def set_title(self):
-        return "Waller v2.081//Copyright © 2020-2022 Transgirl"
+        return "Waller v2.084//Copyright © 2020-2022 Transgirl"
 
     def clear(self):
         os.system("clear")
 
     def select_color(self, color):
-        match color:
-            case "res":
-                chosen = self.color.res
-            case "bla":
-                chosen = self.color.bla
-            case "red":
-                chosen = self.color.red
-            case "gre":
-                chosen = self.color.gre
-            case "yel":
-                chosen = self.color.yel
-            case "blu":
-                chosen = self.color.blu
-            case "pin":
-                chosen = self.color.pin
-            case "cya":
-                chosen = self.color.cya
-            case _:
-                chosen = self.color.whi
+        if color == "res":
+            chosen = self.color.res
+        elif color == "bla":
+            chosen = self.color.bla
+        elif color == "red":
+            chosen = self.color.red
+        elif color == "gre":
+            chosen = self.color.gre
+        elif color == "yel":
+            chosen = self.color.yel
+        elif color == "blu":
+            chosen = self.color.blu
+        elif color == "pin":
+            chosen = self.color.pin
+        elif color == "cya":
+            chosen = self.color.cya
+        else:
+            chosen = self.color.whi
+
         return chosen
 
     def show_cursor(self):
@@ -134,39 +134,55 @@ class TUI:
         return switch
 
     def show_help(self):
+        cya = self.color.cya
+        gre = self.color.gre
+        red = self.color.red
+        yel = self.color.yel
+        res = self.color.res
         options = [
-                "next\t\tShow the next wallpaper",
-                "previous\tShow the previous wallpaper ('prev' is also allowed)",
-                "",
-                "id\t\tShow mininal info on the current wallpaper",
-                "info\t\tShow extensive info on thecurrent wallpaper",
-                "",
-                "auto\t\tToggle automatic change of wallpaper",
-                "grub\t\tToggle changing of the GRUB wallpaper",
-                "sddm\t\tToggle changing of the SDDM wallpaper",
-                "both\t\tToggle changing of both GRUB and SDDM wallapers"
-                "random\t\tToggle random choice of wallpaper (changes current wallpaper)",
-                "",
-                "folder\t\tChange the folder where the wallpapers are located",
-                "refresh\t\tRefresh the currently used wallpaper",
-                "",
-                "backup\t\tCreate a backup of the current wallpaper",
-                "restore\t\tRestore the backed up version of the current wallpaper",
-                "",
-                "help\t\tShow this help, duh"
-                ]
+            f"$gWaller$$ is a simple script to help you set wallpapers.",
+            f"Configuration file is: $y~/.config/waller/waller.toml$$",
+            "",
+            "$gUsage$$:",
+            "-$ywaller $c<option>$$",
+            "-If no option is given 'next' will be presumed.",
+            "",
+            "$gOptions$$:",
+            "$cnext$$--Show the next wallpaper",
+            "$cprevious$$-Show the previous wallpaper ('prev' is also allowed)",
+            "$cchoose$$--Choose a random wallpaper (also sets random to true)",
+            "",
+            "$cid$$--Show mininal info on the current wallpaper",
+            "$cinfo$$--Show extensive info on thecurrent wallpaper",
+            "",
+            "$cgrub$$--Toggle changing of the GRUB wallpaper",
+            "$csddm$$--Toggle changing of the SDDM wallpaper",
+            "$cboth$$--Toggle changing of both GRUB and SDDM wallapers",
+            "$crandom$$--Toggle random choice of wallpaper (changes current wallpaper)",
+            "$ctoggle$$--Toggle all the settings",
+            "",
+            "$cfolder$$--Change the folder where the wallpapers are located",
+            "$crefresh$$--Refresh the currently used wallpaper",
+            "",
+            "$cbackup$$--Create a backup of the current wallpaper",
+            "$crestore$$--Restore the backed up version of the current wallpaper",
+            "",
+            "$cauto$$--Toggle automatic change of wallpaper",
+            "$crestart$$--Restart systemd timer",
+            "$cstatus$$--Show the status of systemd timer",
+            "",
+            "$chelp$$--Show this help, duh"
+        ]
         self.clear()
-        self.draw_box(self.title, color="yel", titler=True)
-        print()
-        print("Waller is a simple script to help you set wallpapers.")
-        print("Configuration file is: ~/.config/waller/waller.toml")
-        print()
-        print("Usage:")
-        print("\twaller <option>")
-        print("\tIf no option is given 'next' will be presumed.")
-        print()
-        print("Options:")
+        # self.draw_box(self.title, color="yel", titler=True)
+        # print()
         for option in options:
+            option = option.replace("-", "\t")
+            option = option.replace("$c", cya)
+            option = option.replace("$y", yel)
+            option = option.replace("$r", red)
+            option = option.replace("$g", gre)
+            option = option.replace("$$", res)
             print(f"\t{option}")
 
 
@@ -220,7 +236,11 @@ class Utils:
     def execute_root_command(self, command):
         args = ["sudo", "-S"]
         command = command.split()
-        p = Popen(args + command, stdin=PIPE, stderr=PIPE, universal_newlines=True)
+        p = Popen(
+            args + command,
+            stdin=PIPE,
+            stderr=PIPE, universal_newlines=True
+        )
         r = p.communicate(self.config["password"] + "\n")[1]
         del r
 
@@ -235,11 +255,13 @@ class Utils:
             cmd = "cp"
 
         if self.config["sddm"]:
-            sddm_command = f"<COMMAND> {curwall} {sddmpath}".replace("<COMMAND>", cmd)
+            sddm_command = f"<COMMAND> {curwall} {sddmpath}"
+            sddm_command = sddm_command.replace("<COMMAND>", cmd)
             self.execute_root_command(sddm_command)
 
         if self.config["grub"]:
-            grub_command = f"<COMMAND> {curwall} {grubpath}".replace("<COMMAND>", cmd)
+            grub_command = f"<COMMAND> {curwall} {grubpath}"
+            grub_command = grub_command.replace("<COMMAND>", cmd)
             self.execute_root_command(grub_command)
 
     def show_systemd_status(self):
@@ -256,15 +278,9 @@ class Utils:
         # --- check for possible times
         output = self.get_output("systemctl --user status wallpaper.timer")
         output = output.split(" ")
-        # leftidx = output.index["left\n"]
         weeks, days, hours, minutes = "", "", "", ""
         for idx, line in enumerate(output):
-            # if "week" in line:
-            #    weeks = output[idx -1] + "w "
-
-            # if "day" in line:
-            #    days = output[idx - 1] + "d "
-
+            line = line
             if "left\n" in output:
                 idx = output.index("left\n") - 1
                 if "min" in output[idx]:
@@ -284,7 +300,6 @@ class Utils:
             result = f"{red}disabled{res}"
             self.config['auto'] = False
             self.fileio.save_config(self.config)
-
         return result
 
     def get_current_number(self, wallpaper):
@@ -358,14 +373,18 @@ class Utils:
         self.set_wallpaper()
 
     def choose_random_wallpaper(self):
-        self.config["curwall"] = choice(self.wallpapers)
+        new_wallpaper = choice(self.wallpapers)
+        self.config["curwall"] = new_wallpaper
+        self.fileio.save_config(self.config)
+        self.set_wallpaper()
+
+    def toggle_random_change(self):
         if self.config['random']:
             self.config['random'] = False
         else:
             self.config['random'] = True
-
         self.fileio.save_config(self.config)
-        self.set_wallpaper()
+        self.show_long_info()
 
     def toggle_sddm_change(self):
         if self.config["sddm"]:
@@ -396,6 +415,25 @@ class Utils:
         self.fileio.save_config(self.config)
         self.tui.notice(
             "Giving 'systemctl' some time to process change ...",
+            secs_to_wait=2
+        )
+        self.show_long_info()
+
+    def restart_systemd_timer(self):
+        cmd1 = "systemctl --user restart wallpaper.timer"
+        cmd2 = "systemctl --user daemon-reload"
+
+        self.tui.message(
+            "Restarting systemd timer ..."
+        )
+        os.system(cmd1)
+        self.tui.notice(
+            "Giving 'systemctl' some time to process change ...",
+            secs_to_wait=2
+        )
+        os.system(cmd2)
+        self.tui.notice(
+            "Giving 'systemctl' some time to process change again ...",
             secs_to_wait=2
         )
         self.show_long_info()
@@ -506,17 +544,23 @@ class Waller:
         else:
             path = ""
             if arg == "next":
-                self.utils.choose_next_wallpaper()
+                if self.utils.config['random']:
+                    self.utils.choose_random_wallpaper()
+                else:
+                    self.utils.choose_next_wallpaper()
             elif arg in ['previous', 'prev']:
-                self.utils.choose_previous_wallpaper()
+                if self.utils.config['random']:
+                    self.utils.choose_random_wallpaper()
+                else:
+                    self.utils.choose_previous_wallpaper()
+            elif arg == "choose":
+                self.utils.choose_random_wallpaper()
             elif arg == "refresh":
                 self.utils.restore_wallpaper()
             elif arg == "id":
                 self.utils.show_short_info()
             elif arg == "info":
                 self.utils.show_long_info()
-            elif arg == "auto":
-                self.utils.toggle_auto_change()
             elif arg == "grub":
                 self.utils.toggle_grub_change()
             elif arg == "sddm":
@@ -525,6 +569,21 @@ class Waller:
                 self.utils.toggle_sddm_change()
                 sleep(0.6)
                 self.utils.toggle_grub_change()
+            elif arg == "random":
+                self.utils.toggle_random_change()
+            elif arg == "toggle":
+                self.utils.toggle_auto_change()
+                sleep(0.6)
+                self.utils.toggle_random_change()
+                sleep(0.6)
+                self.utils.toggle_sddm_change()
+                sleep(0.6)
+                self.utils.toggle_grub_change()
+                sleep(0.6)
+            elif arg == "auto":
+                self.utils.toggle_auto_change()
+            elif arg == "restart":
+                self.utils.restart_systemd_timer()
             elif arg == "status":
                 self.utils.show_systemd_status()
             elif arg == "open":

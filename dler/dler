@@ -271,7 +271,7 @@ class DLer:
                 sleep(2)
 
         if not self.keep_lists:
-            self.tui.step(f"Deleting download archive")
+            self.tui.step("Deleting download archive")
             if self.fileio.check_if_file_exists(self.archive):
                 self.fileio.remove(self.archive)
             sleep(1.2)

@@ -1,0 +1,161 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+# import shutil
+
+from time import sleep
+
+
+class Colors:
+    res = "\033[0m"
+    red = "\033[31;1m"
+    gre = "\033[32;1m"
+    yel = "\033[33;1m"
+    blu = "\033[34;1m"
+    pin = "\033[35;1m"
+    cya = "\033[36;1m"
+    whi = "\033[37;1m"
+
+
+class TUI:
+    def __init__(self):
+        self.colors = Colors()
+        self.maxlen = 60
+        self.title = " Renamer "
+
+    def remove_color_codes(self, line):
+        remove = [
+            "\033[0m",
+            "\033[31;1m",
+            "\033[32;1m",
+            "\033[33;1m",
+            "\033[34;1m",
+            "\033[35;1m",
+            "\033[36;1m",
+            "\033[37;1m"
+        ]
+
+        for entry in remove:
+            line = line.replace(entry, "")
+        return line
+
+    def draw_title(self, clear=True):
+        res = self.colors.res
+        yel = self.colors.yel
+        cya = self.colors.cya
+        line = ((self.maxlen - len(self.title)) // 2) * "─"
+        full_line = f"{line}{self.title}{line}"
+        addition = ""
+        if len(full_line) < self.maxlen:
+            addition = (self.maxlen - len(full_line)) * "─"
+
+        if clear:
+            os.system('clear')
+
+        print(f"{yel}{line}{cya}{self.title}{yel}{line}{addition}{res}")
+
+    def draw_line(self):
+        res = self.colors.res
+        yel = self.colors.yel
+        line = self.maxlen * "─"
+        print(f"{yel}{line}{res}")
+
+    def cprint(self, message):
+        t = self.remove_color_codes(message)
+        spaces = ((self.maxlen - len(t)) // 2) * " "
+        print(f"{spaces}{message}")
+
+    def print_message(self, message, sameline=False):
+        col = self.colors.gre
+        res = self.colors.res
+        if sameline:
+            print(f"{col}>>{res} {message}", end="\r")
+        else:
+            print(f"{col}>>{res} {message}")
+
+    def print_error(self, message):
+        col = self.colors.red
+        res = self.colors.res
+        print(f"{col}>>{res} {message}")
+
+    def print_warning(self, message):
+        col = self.colors.yel
+        res = self.colors.res
+        print(f"{col}>>{res} {message}")
+
+
+class Renamer:
+    def __init__(self):
+        self.tui = TUI()
+        self.colors = Colors()
+        self.cwd = os.getcwd()
+
+    def gather_all_files(self, extension):
+        files = []
+        self.tui.print_message(f"Gathering all files ending in {extension}")
+        for entry in os.scandir(self.cwd):
+            if entry.name.endswith(extension):
+                files.append(entry.name)
+        return files
+
+    def do_rename(self, files, prefix, extension):
+        res = self.colors.res
+        cya = self.colors.cya
+        red = self.colors.red
+        gre = self.colors.gre
+        yel = self.colors.yel
+        bar_empty = "─"
+        bar_full = "≡"
+
+        self.tui.draw_title()
+        self.tui.cprint(f"Renaming all files ending in {cya}{extension}{res}.")
+        self.tui.draw_line()
+
+        total = len(files)
+        tlen = len(str(total))
+        statusbar_clean = 10 * bar_empty
+        self.tui.print_message(f"Renaming {total} files.")
+        for count, file in enumerate(files):
+            number = count + 1
+            percentage = round((number / total) * 100)
+            num_done = int(percentage / len(statusbar_clean))
+            num_left = len(statusbar_clean) - num_done
+            status_done = num_done * bar_full
+            status_left = num_left * bar_empty
+            statusbar = f"{gre}{status_done}{red}{status_left}{res}"
+            counter = f"{number:0{tlen}}"
+            filestatus = f"{counter}/{total} "
+            infoline = f"Processing {filestatus} [{statusbar} {percentage:3}%]"
+
+            # shortname = file[:30] + "..."
+            digits = f"{number:0{tlen}}"
+            newname = f"{prefix}-{digits}.{extension}"
+            self.tui.print_message(
+                f"{infoline}",
+                sameline=True
+            )
+            os.rename(file, newname)
+            sleep(0.8)
+        print()
+        self.tui.print_message("All done.")
+
+    def run(self):
+        files = []
+        self.tui.draw_title()
+        self.tui.cprint("A simple renaming script.")
+        self.tui.draw_line()
+        extension = input("Extension (ex. mp4 or png) : ").lower()
+        prefix = input("What should the prefix be? : ").lower()
+        files = self.gather_all_files(extension)
+        if len(files) == 0:
+            self.tui.print_error(
+                f"Couldn't find any files ending in {extension}!"
+            )
+            exit()
+        self.do_rename(files, prefix, extension)
+
+
+if __name__ == "__main__":
+    renamer = Renamer()
+    renamer.run()
