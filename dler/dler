@@ -192,6 +192,7 @@ class DLer:
         status_bar_clean = 10 * bar_empty
         yel = self.color.yel
         gre = self.color.gre
+        cya = self.color.cya
         res = self.color.res
 
         for c, item in enumerate(data):
@@ -206,7 +207,7 @@ class DLer:
             self.tui.clear()
             self.tui.show_title()
             self.tui.message(
-                f"Parsing file '{filename}' ({numfile:2}/{self.total_files:2})"
+                f"Parsing file {cya}{filename}{res} ({numfile:2}/{self.total_files:2})"
             )
             self.tui.step(self.generate_command_string)
             self.tui.step(self.execute_commands_string)
