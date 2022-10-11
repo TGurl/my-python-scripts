@@ -1,0 +1,13 @@
+{
+  "include": ["src"],
+
+  "exclude": ["**/__pycache__", "src/experimental", "src/typestubs"],
+
+  "ignore": ["src/oldstuff"],
+
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false,
+  "reportGeneralTypeIssues": "none",
+  "pythonVersion": "3.10",
+  "pythonPlatform": "Linux"
+}

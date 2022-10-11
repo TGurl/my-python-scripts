@@ -1,0 +1,150 @@
+#!/usr/bin/env python
+# pylint: disable=line-too-long
+
+from tui import TUI
+from colors import Colors
+from fileio import FileIO
+from time import sleep
+from convert import Convert
+
+
+class Heroes:
+    def __init__(self):
+        self.colors = Colors()
+        self.fileio = FileIO()
+        self.convert = Convert()
+        self.tui = TUI()
+
+        self.data = self.readdata()
+        self.title = "my heroes"
+
+    def readdata(self):
+        return self.fileio.readtoml('pornstars')
+
+    def showinfo(self, babeinfo):
+        self.tui.showinfo(babeinfo)
+
+    def changedata(self):
+        self.tui.clear()
+        self.tui.message("Changing data...")
+        sleep(2)
+
+    def searchbabe(self, query=""):
+        def noresults():
+            self.tui.error("Sorry, I couldn't find that babe...")
+            sleep(2)
+            return False
+
+        def oneresult(babe):
+            babeinfo = self.data[babe]
+            self.showinfo(babeinfo)
+
+        def multipleresults(results):
+            valid = []
+            for c, babe in enumerate(results):
+                name = self.tui.converttoname(babe)
+                print(f"{c + 1}. {name}")
+                valid.append(str(c + 1))
+            print()
+            subloop = True
+            while subloop:
+                answer = input("Who did you mean? > ").lower()
+                if answer not in valid:
+                    self.tui.error("That isn't an option!")
+                else:
+                    oneresult(results[int(answer) - 1])
+                    subloop = False
+
+        def dosearch(query):
+            results = []
+            for babe in self.data['pornstars']:
+                alias = self.data[babe]['alias'].lower()
+                if query in babe or query in alias:
+                    results.append(babe)
+            return results
+
+        self.tui.clear()
+        print(self.tui.rendername(self.title), end='\n\n')
+        if query == "":
+            self.tui.message("Just enter 'quit' to return to the main menu.")
+            print()
+            query = input("Who do you want to search for? > ").lower()
+
+        if query in ['q', 'quit']:
+            return False
+        else:
+            results = dosearch(query)
+            if len(results) == 0:
+                noresults()
+            elif len(results) == 1:
+                oneresult(results[0])
+            else:
+                multipleresults(results)
+
+    def checkifchickexists(self, name):
+        name = name.replace(' ', '_').lower()
+        result = True if name in self.data['pornstars'] else False
+        return result
+
+    def addbabe(self):
+        gre = self.colors.green
+        res = self.colors.reset
+        subloop = True
+        while subloop:
+            self.tui.clear()
+            print(self.tui.rendername(self.title), end='\n\n')
+            self.tui.message("Just enter 'quit' to return to the main menu.")
+            print()
+            name = input("Who do you want to add? > ").lower()
+            if self.checkifchickexists(name):
+                name = name.title()
+                self.tui.error(f"{gre}{name}{res} already exists in the database.")
+                sleep(2)
+            elif name in ['q', 'quit']:
+                return False
+            else:
+                self.tui.enterdataloop(name)
+                self.data = self.readdata()
+
+    def browsebabes(self):
+        id = self.tui.renderbrowsemenu(self.data['pornstars'])
+        if id != 'exit':
+            self.showinfo(self.data[id])
+
+    def showsplash(self):
+        self.tui.clear()
+        self.tui.hide_cursor()
+        splash = self.tui.rendersplash()
+        print(splash)
+        sleep(4)
+        self.tui.show_cursor()
+
+    def run(self):
+        self.showsplash()
+
+        menu = self.tui.rendermainmenu()
+        goodbye = self.tui.rendername('goodbye')
+        loop = True
+
+        while loop:
+            self.tui.clear()
+            print(menu)
+            answer = input("What do you want to do? > ").lower()
+            if answer in ['q', 'quit']:
+                loop = False
+            elif answer in ['b', 'browse']:
+                self.browsebabes()
+            elif answer in ['s', 'search']:
+                self.searchbabe()
+            elif answer in ['a', 'add']:
+                self.addbabe()
+            else:
+                self.searchbabe(query=answer)
+
+        self.tui.clear()
+        print(goodbye)
+
+
+if __name__ == "__main__":
+    heroes = Heroes()
+    heroes.run()

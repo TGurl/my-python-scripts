@@ -1,0 +1,28 @@
+# --- Game information
+level = 1
+
+# --- What's in a year?
+day = 1
+year = 2010
+daysperyear = 300
+
+# --- Laura's defaults
+age = 18
+sexy = 0
+cup = 0
+health = 100
+partners = 0
+bank = 1000.0
+
+# --- Job information
+job = "none"
+illegal = false
+wage = 0
+tips = false
+cupsize_increases_tip = false
+
+# --- Medical information
+std = false
+pregnant = false
+bc = false
+bc_method = "none"

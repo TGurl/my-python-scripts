@@ -1,0 +1,351 @@
+pornstars = [
+    'angela_white',
+    'lena_paul',
+    'gianna_michaels',
+    'shione_cooper',
+    'ann_vanderbilt',
+    'jasmine_black',
+    'lucie_wilde',
+    'leanne_crow',
+    'sarah_nicola_randall',
+    'lorna_morgan',
+    'sara_jay',
+    'dee_williams',
+    'kristina_milan'
+]
+
+[template]
+id = ""
+name = ""
+alias = ""
+birthdate = "1900/01"
+ethnicity = ""
+nationality = ""
+eyecolor = ""
+haircolor = ""
+height = 0
+weight = 0
+bust = 0
+waist = 0
+hips = 0
+cup = ""
+boobs = ""
+tattoos = ""
+piercings = ""
+shoesize = 0
+active = false
+since = 0
+retired = 0
+rating = 0
+
+[lucie_wilde]
+id = "lucie_wilde"
+name = "Lucie Wilde"
+alias = "Busty Buffy,Lucy Wild,Lucy Wilde"
+nationality = "Czech"
+birthdate = "1996/01"
+ethnicity = "Caucasian"
+eyecolor = "Hazel"
+haircolor = "Brown"
+height = 168
+weight = 56
+bust = 32
+waist = 26
+hips = 37
+cup = "G"
+boobs = "Natural"
+tattoos = "none"
+piercings = "none"
+shoesize = 38
+active = false
+since = 2014
+retired = 2016
+rating = 8
+
+[jasmine_black]
+id = "jasmine_black"
+name = "Jasmine Black"
+alias = "Ana Hot,Black Yasmin,Black Jasmine,Jasmine B.,Jasmyne,Mary,Ora,Yasmine Black"
+nationality = "Czech"
+birthdate = "1987/11"
+ethnicity = "Caucasian"
+eyecolor = "Brown"
+haircolor = "Black"
+height = 167
+weight = 63
+bust = 34
+waist = 27
+hips = 36
+cup = "DD"
+boobs = "Natural"
+tattoos = "none"
+piercings = "Nose,Navel"
+shoesize = 37.5
+active = false
+since = 2007
+retired = 2017
+rating = 7
+
+[ann_vanderbilt]
+id = "ann_vanderbilt"
+name = "Ann Vanderbilt"
+alias = "Morgana,TittySprinkles"
+nationality = "Unkown"
+birthdate = "1978/10"
+ethnicity = "Caucasian"
+eyecolor = "Blue"
+haircolor = "Blonde"
+height = 162
+weight = 70
+bust = 38
+waist = 29
+hips = 36
+cup = "J"
+boobs = "Natural"
+tattoos = "none"
+piercings = "Yes"
+shoesize = 0
+active = true
+since = 2003
+retired = 0
+rating = 3
+
+[angela_white]
+id = "angela_white"
+name = "Angela White"
+alias = "Angela Gabrielle White,Angie"
+nationality = "Australian"
+birthdate = "1985/3"
+ethnicity = "Caucasian"
+eyecolor = "Blue"
+haircolor = "Brown"
+height = 160
+weight = 55
+bust = 42
+waist = 27
+hips = 41
+cup = "G"
+boobs = "Natural"
+tattoos = "Back Of Neck"
+piercings = "Navel"
+shoesize = 36
+active = true
+since = 2003
+retired = 0
+rating = 9
+
+[lena_paul]
+id = "lena_paul"
+name = "Lena Paul"
+alias = "Lena Peach"
+nationality = "American"
+birthdate = "1993/10"
+ethnicity = "Caucasian"
+eyecolor = "Blue"
+haircolor = "Blonde"
+height = 163
+weight = 58
+bust = 32
+waist = 25 
+hips = 36
+cup = "DDD"
+boobs = "Natural"
+tattoos = "none"
+piercings = "none"
+shoesize = 36.5
+active = true
+since = 2016
+retired = 0
+rating = 8
+
+[gianna_michaels]
+id = "gianna_michaels"
+name = "Gianna Michaels"
+alias = "Gianna Rossi,Gianna Michael,Terah Wicker,Giana Michaels"
+nationality = "American"
+birthdate = "1983/6"
+ethnicity = "Caucasian"
+eyecolor = "Blue"
+haircolor = "Auburn"
+height = 178
+weight = 66
+bust = 34
+waist = 27
+hips = 38
+cup = "G"
+boobs = "Natural"
+tattoos = "Right Shoulder; 5-Pointed Star Mid-Back Right side of spine"
+piercings = "Tongue"
+active = false
+since = 2004
+retired = 2015
+shoesize = 41
+rating = 6
+
+[shione_cooper]
+id = "shione_cooper"
+name = "Shione Cooper"
+alias = "Deborah Shionne,Simone Cooper"
+nationality = "Chech"
+birthdate = "1987/6"
+ethnicity = "Caucasian"
+eyecolor = "Green"
+haircolor = "Black"
+height = 174
+weight = 62
+bust = 40
+waist = 27
+hips = 35
+cup = "DDD"
+boobs = "Natural"
+tattoos = "none"
+piercings = "Navel Left; Nostril Left; Eyebrow; Tongue"
+active = true
+since = 2008
+retired = 0
+shoesize = 36
+rating = 7
+
+[leanne_crow]
+id = 'leanne_crow'
+name = 'Leanne Crow'
+alias = 'Crow Leanne'
+active = true
+since = '2008'
+retired = 0
+nationality = 'British'
+ethnicity = 'Caucasian'
+birthdate = '1966/06'
+cup = 'M'
+boobs = 'Natural'
+bust = 46
+waist = 30
+hips = 38
+height = 170
+weight = 80
+eyecolor = 'Hazel'
+haircolor = 'Black'
+tattoos = 'Both Arms; Stomach; Left Side'
+piercings = 'None'
+shoesize = 38.5
+rating = 8
+
+[sarah_nicola_randall]
+id = 'sarah_nicola_randall'
+name = 'Sarah Nicola Randall'
+alias = 'Sarah Randall'
+active = true
+since = '2011'
+retired = 0
+nationality = 'British'
+ethnicity = 'Caucasian'
+birthdate = '1988/05'
+cup = 'I'
+boobs = 'Natural'
+bust = 32
+waist = 24
+hips = 34
+height = 160
+weight = 80
+eyecolor = 'Green'
+haircolor = 'Brown'
+tattoos = 'Writing on right side; Lower Back'
+piercings = 'Navel'
+shoesize = 0
+rating = 7
+
+[lorna_morgan]
+id = 'lorna_morgan'
+name = 'Lorna Morgan'
+alias = 'Lorna Morgen'
+active = false
+since = '2001'
+retired = 2009
+nationality = 'British'
+ethnicity = 'Caucasian'
+birthdate = '1976/02'
+cup = 'I'
+boobs = 'Natural'
+bust = 36
+waist = 24
+hips = 35
+height = 160
+weight = 56
+eyecolor = 'Hazel'
+haircolor = 'Brown'
+tattoos = 'None'
+piercings = 'None'
+shoesize = 35.5
+rating = 7
+
+[sara_jay]
+id = 'sara_jay'
+name = 'Sara Jay'
+alias = 'Sara Jay Taylor,Lina,Sarah J,S. Jaye'
+active = true
+since = '2001'
+retired = 0
+nationality = 'American'
+ethnicity = 'Caucasian'
+birthdate = '1977/11'
+cup = 'E'
+boobs = 'Fake'
+bust = 36
+waist = 25
+hips = 41
+height = 163
+weight = 66
+eyecolor = 'Hazel'
+haircolor = 'Blonde'
+tattoos = 'Both Ankles; Right Thumb; Lower And Upper Back'
+piercings = 'Tongue; Industrial'
+shoesize = 41
+rating = 7
+
+[dee_williams]
+id = 'dee_williams'
+name = 'Dee Williams'
+alias = 'Sharon Darling,The Grappler,Darling'
+active = true
+since = '2004'
+retired = 0
+nationality = 'American'
+ethnicity = 'Caucasian'
+birthdate = '1977/06'
+cup = 'DDD'
+boobs = 'Fake'
+bust = 34
+waist = 27
+hips = 36
+height = 163
+weight = 58
+eyecolor = 'Blue'
+haircolor = 'Blonde'
+tattoos = 'Large Cross Covering Upper And Middle Back; Celtic Triangleknot On Lower Back; Left Shoulder Blade.'
+piercings = 'None'
+shoesize = 38
+rating = 6
+
+[kristina_milan]
+id = 'kristina_milan'
+name = 'Kristina Milan'
+alias = 'none'
+active = true
+since = '2007'
+retired = 0
+nationality = 'Puerto Rican'
+ethnicity = 'Latin'
+birthdate = '1986/03'
+cup = 'K'
+boobs = 'Natural'
+bust = 42
+waist = 27
+hips = 38
+height = 168
+weight = 75
+eyecolor = 'Brown'
+haircolor = 'Black'
+tattoos = 'none'
+piercings = 'none'
+shoesize = 40
+rating = 8

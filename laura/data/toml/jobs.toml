@@ -1,0 +1,172 @@
+jobs = [
+	'waitress01',
+	'waitress02',
+	'waitress03',
+	'model01',
+	'model02',
+	'model03',
+	'model04',
+	'pornstar01',
+	'pornstar02',
+	'pornstar03',
+	'hooker01',
+	'hooker02',
+	'hooker03'
+]
+
+[waitress01]
+name = 'Waitress'
+company = 'Lonestar Cafe'
+description = "At Lonestar Cafe we offer the best family experience. We are looking for nice girls to complete our staff."
+tips = true
+tipcup = false
+illegal = false
+sex = false
+jobcenter = true
+wage = 4.25
+maxtip = 25
+
+[waitress02]
+name = 'Waitress'
+company = 'Boobs'
+description = "Do you want to be part of a nice team? Then come work for us and have a good time while doing it."
+tips = true
+tipcup = true
+illegal = false
+sex = false
+jobcenter = true
+wage = 5.75
+maxtip = 40
+
+[waitress03]
+name = 'Waitress'
+company = 'Shooters'
+description = "We are looking for nice, beautiful girls to help us give our customers the best experience possible. We offer a good wage and good tips."
+tips = true
+tipcup = true
+illegal = false
+sex = true
+jobcenter = true
+wage = 6.65
+maxtip = 75
+
+[model01]
+name = "Model"
+company = "GoodGirls"
+description = "GoodGirls is an agency for girls who want to model. No adult content! Our clients are some of the biggest brands in the business."
+tips = false
+tipcup = false
+illegal = false
+sex = false
+jobcenter = true
+wage = 12.35
+maxtip = 0
+
+[model02]
+name = "Camgirl"
+company = "OnlySubs"
+description = "OnlySubs is a site where you can do whatever you want. You can sell flowers or anything you want. OnlySubs is the biggest of it's kind in the world."
+tips = true
+tipcup = true
+illegal = false
+sex = true
+jobcenter = false
+wage = 0.0
+maxtip = 500
+
+[model03]
+name = "Glamour Model"
+company = "Glam Slam"
+description = "We at Glam Slam believe in the power of women! Do you want to show a little more of yourself? We can help you become the star you want to be."
+tips = true
+tipcup = true
+illegal = false
+sex = true
+jobcenter = true
+wage = 15.00
+maxtip = 250
+
+[model04]
+name = "Sexy Model"
+company = "Girls Aloud"
+description = "We offer a safe space for everyone who wants to experiment a little. Good pay for girls who dare."
+tips = true
+tipcup = true
+illegal = false
+sex = true
+jobcenter = true
+wage = 25.0
+maxtip = 150
+
+[pornstar01]
+name = "Adult Actress"
+company = "Blue Donkey"
+description = "We are looking for girls. Call us for an audition."
+tips = false
+tipcup = false
+illegal = false
+sex = true
+jobcenter = true
+wage = 200.0
+maxtip = 0
+
+[pornstar02]
+name = "Adult Actress"
+company = "Brazen"
+description = "Brazen is the top agency for people who want to work in the adult industry. Good plans, good pay."
+tips = true
+tipcup = true
+illegal = false
+sex = true
+jobcenter = true
+wage = 250.0
+maxtip = 750
+
+[pornstar03]
+name = "Adult Acress"
+company = "Girls Gone Wild"
+description = "GGW is the leading company in the adult industry. We offer everything you need to work in this industry safely."
+tips = true
+tipcup = true
+illegal = false
+sex = true
+jobcenter = true
+wage = 230.0
+maxtip = 550
+
+[hooker01]
+name = "Street Hooker"
+company = "none"
+description = "Hey,psss. I saw you in the restaurant the other day. I think you could make a lot of money. Interested?"
+tips = true
+tipcup = true
+illegal = true
+sex = true
+jobcenter = false
+wage = 0.0
+maxtip = 1000
+
+[hooker02]
+name = "Escort"
+company = "Cindy's Escorts"
+description = "We offer services to people who just want some company."
+tips = true
+tipcup = true
+illegal = true
+sex = true
+jobcenter = true
+wage = 125.0
+maxtip = 125
+
+[hooker03]
+name = "High Class Escort"
+company = "Nighthawk Escorts"
+description = "At Nighthawk we offer the best services by the best girls."
+tips = true
+tipcup = true
+illegal = true
+sex = true
+jobcenter = true
+wage = 325.47
+maxtip = 650
+

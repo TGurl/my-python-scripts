@@ -1,0 +1,413 @@
+#!/usr/bin/env python
+# ----------------------------------------------------------------------
+# Behang is Dutch for wallpaper, thought it was funny to call it this,
+# but decided against it and just call the main executable 'wp'
+# ----------------------------------------------------------------------
+
+import os
+import sys
+import random
+
+from subprocess import getoutput, Popen, PIPE
+from tools import Colors, Tools
+from pathlib import Path
+from time import sleep
+
+
+class WallPaper:
+    def __init__(self):
+        self.colors = Colors()
+        self.tools = Tools()
+        self.title = "behang"
+        self.home = os.path.expanduser('~')
+        self.config = os.path.join(self.home, '.config', 'behang', 'config.toml')
+        self.data = self.read_data()
+        self.categories = ['sfw', 'nsfw']
+        self.check = "√"
+        self.cross = "✗"
+        self.wallpapers = self.get_wallpapers()
+
+    def save_data(self):
+        return self.tools.savetoml(self.config, self.data)
+
+    def read_data(self):
+        return self.tools.readtoml(self.config)
+
+    def get_active_category(self):
+        return self.categories[0] if self.data['sfw'] else self.categories[1]
+
+    def check_if_folder_exists(self, subcategory):
+        category = self.get_active_category()
+        path = os.path.join(self.data['folder'], category, subcategory)
+        return True if os.path.exists(path) else False
+
+    def render_title(self, title=""):
+        col = self.colors.yellow
+        res = self.colors.reset
+        if title == "":
+            title = "behang"
+        print(f"{col}{self.tools.bigletters(title)}{res}")
+
+    def check_setting(self, item):
+        result = self.data[item]
+        check = self.check if result else self.cross
+        color = self.colors.green if result else self.colors.red
+        return check, color
+
+    def get_wallpapers(self):
+        folder = self.data['folder']
+        category = self.get_active_category()
+        subcategory = self.data['subcategory']
+        path = os.path.join(folder, category, subcategory)
+        if not os.path.exists(path):
+            wallpapers = []
+            self.data['subcategory'] = ""
+            self.save_data()
+        else:
+            wallpapers = self.tools.get_contents_of_folder(path, extension='jpg')
+        wallpapers.sort()
+        return wallpapers
+
+    def count_wallpapers(self):
+        return len(self.wallpapers)
+
+    def get_wallpaper_index(self):
+        return self.wallpapers.index(self.data['current'])
+
+    def togglecategory(self):
+        self.data['sfw'] = False if self.data['sfw'] else True
+        self.change_subcategory()
+        # self.data['subcategory'] = ""
+        # self.data['current'] = ""
+        # self.save_data()
+
+    def toggle(self, item):
+        self.data[item] = True if not self.data[item] else False
+        self.save_data()
+        
+    def toggle_autochange_wallpaper(self):
+        subcmd = "start" if self.data['auto'] else "stop"
+        cmd = f"systemctl --user --now {subcmd} wallpaper.timer"
+        os.system(cmd)
+        self.tools.warning("Giving systemctl some time to adjust...")
+        # sleep(1)
+
+    def execute_root_command(self, command):
+        args = ["sudo", "-S"]
+        command = command.split()
+        p = Popen(
+            args + command,
+            stdin=PIPE,
+            stderr=PIPE, universal_newlines=True
+        )
+        r = p.communicate(self.data["rootpw"] + "\n")[1]
+        del r
+
+    def get_output(self, command):
+        output = getoutput(command)
+        return output
+
+    def get_timer_time_left(self):
+        gre = self.colors.cyan
+        red = self.colors.red
+        res = self.colors.reset
+        
+        # --- check for possible times
+        output = getoutput("systemctl --user status wallpaper.timer")
+        output = output.split(" ")
+        weeks, days, hours, minutes = "", "", "", ""
+        for idx, line in enumerate(output):
+            line = line
+            if "left\n" in output:
+                idx = output.index("left\n") - 1
+                if "min" in output[idx]:
+                    minutes = output[idx]
+                    hours = output[idx - 1] + " "
+                    if "CEST" in hours:
+                        hours = ""
+                elif "h" in output[idx]:
+                    hours = output[idx]
+                else:
+                    hours = ""
+
+        timeleft = f"{weeks}{days}{hours}{minutes}"
+        if "left\n" in output:
+            result = f"{gre}{timeleft}{res}"
+        else:
+            result = ""
+        return result
+
+    def construct_wallpaper_path(self):
+        folder = self.data['folder']
+        category = self.get_active_category()
+        subcat = self.data['subcategory']
+        wallpaper = self.data['current']
+        path = os.path.join(folder, category, subcat, wallpaper)
+        return path
+
+    def set_sddm_grub_wallpapers(self):
+        jpg = [".jpg", ".jpeg"]
+        curwall = self.construct_wallpaper_path()
+        cmd = "convert" if Path(curwall).suffix.lower() in jpg else "cp"
+
+        if self.data["sddm"]:
+            sddm_command = f"{cmd} {curwall} {self.data['sddmbg']}"
+            self.execute_root_command(sddm_command)
+
+        if self.data['grub']:
+            grub_command = f"{cmd} {curwall} {self.data['grubbg']}"
+            self.execute_root_command(grub_command)
+
+    def set_the_new_wallpaper(self, fehbg=True):
+        path = self.construct_wallpaper_path()
+        if fehbg:
+            os.system(f"feh --bg-scale {path}")
+        else:
+            os.system(f"feh --no-fehbg --bg-scale {path}")
+        self.set_sddm_grub_wallpapers()
+
+    def next_wallpaper(self):
+        if self.count_wallpapers() > 0:
+            if self.data['current'] == "":
+                newidx = 0
+            else:
+                newidx = self.wallpapers.index(self.data['current']) + 1
+            if newidx > self.count_wallpapers() - 1:
+                newidx = 0
+            self.idx = newidx
+            self.data['current'] = self.wallpapers[newidx]
+            self.save_data()
+            self.set_the_new_wallpaper()
+
+    def previous_wallpaper(self):
+        if self.count_wallpapers() > 0:
+            if self.data['current'] == "":
+                newidx = 0
+            else:
+                newidx = self.wallpapers.index(self.data['current']) - 1
+            if newidx < 0:
+                newidx = self.count_wallpapers() - 1
+            self.idx = newidx
+            self.data['current'] = self.wallpapers[newidx]
+            self.save_data()
+            self.set_the_new_wallpaper()
+
+    def random_wallpaper(self):
+        if self.count_wallpapers() > 0:
+            chosen = self.data['current']
+            while chosen == self.data['current']:
+                chosen = random.choice(self.wallpapers)
+            self.data['current'] = chosen
+            self.save_data()
+            self.set_the_new_wallpaper()
+
+    def change_subcategory(self):
+        subloop = True
+        while subloop:
+            self.tools.clear()
+            self.render_title()
+            self.tools.message("Sub-categories:")
+            print()
+            category = self.get_active_category()
+            path = os.path.join(self.data['folder'], category)
+            items = self.tools.get_folders_in_folder(path, ignore=self.data['ignore'])
+            items.sort()
+            valid = ['q', 'quit']
+            for c, item in enumerate(items):
+                print(f"[{c + 1:2}] {item}")
+                valid.append(str(c + 1))
+            print()
+            answer = self.tools.userinput("Please choose a new sub-category")
+            if answer not in valid:
+                self.tools.error("That doesn't seem right...")
+                sleep(2)
+            elif answer in ['q', 'quit']:
+                subloop = False
+            else:
+                self.data['subcategory'] = items[int(answer) - 1]
+                self.wallpapers = self.get_wallpapers()
+                self.data['current'] = self.wallpapers[0]
+                self.set_the_new_wallpaper()
+                self.save_data()
+                subloop = False
+    
+    def show_info(self):
+        reset = self.colors.reset
+        yellow = self.colors.yellow
+        red = self.colors.red
+        cyan = self.colors.cyan
+        reset = self.colors.reset
+        count = 0
+        current = self.data['current']
+        if self.data['subcategory'] != "":
+            count = self.count_wallpapers()
+        auto_check, auto_color = self.check_setting('auto')
+        random_check, random_color = self.check_setting('random')
+        grub_check, grub_color = self.check_setting('grub')
+        sddm_check, sddm_color = self.check_setting('sddm')
+        category = 'SFW' if self.data['sfw'] else 'NSFW'
+        subcategory = self.data['subcategory']
+        if subcategory == "":
+            subcategory = f"{red}!!! CHOOSE ONE !!!{reset}"
+        timeleft = self.get_timer_time_left()
+
+        self.tools.clear()
+        self.render_title('behang')
+        self.tools.message(f"Current main category : {cyan}{category}{reset}")
+        self.tools.message(f"Current subcategory   : {cyan}{subcategory}{reset}")
+        self.tools.message(f"Number of wallpapers  : {cyan}{count}{reset}")
+        self.tools.message(f"Current wallpaper     : {cyan}{current}{reset}")
+        if self.data['auto']:
+            self.tools.message(f"Next wallpaper in     : {timeleft}")
+        
+        print()
+        self.tools.info(f"Auto change wallpaper [{auto_color}{auto_check}{reset}]")
+        self.tools.info(f"Randomize wallpaper   [{random_color}{random_check}{reset}]")
+        self.tools.info(f"Change GRUB wallpaper [{grub_color}{grub_check}{reset}]")
+        self.tools.info(f"Change SDDM wallpaper [{sddm_color}{sddm_check}{reset}]")
+
+    def show_mainmenu(self):   
+        reset = self.colors.reset
+        yellow = self.colors.yellow
+        red = self.colors.red
+        cyan = self.colors.cyan
+        reset = self.colors.reset
+
+        loop = True
+        while loop:
+            count = 0
+            if self.data['subcategory'] != "":
+                count = self.count_wallpapers()
+            auto_check, auto_color = self.check_setting('auto')
+            random_check, random_color = self.check_setting('random')
+            grub_check, grub_color = self.check_setting('grub')
+            sddm_check, sddm_color = self.check_setting('sddm')
+            category = 'SFW' if self.data['sfw'] else 'NSFW'
+            subcategory = self.data['subcategory']
+            current = self.data['current']
+            if subcategory == "":
+                subcategory = f"{red}!!! CHOOSE ONE !!!{reset}"
+
+            timeleft = self.get_timer_time_left()
+
+            self.tools.clear()
+            self.render_title('behang')
+
+            self.tools.message(f"Current main category : {cyan}{category}{reset}")
+            self.tools.message(f"Current subcategory   : {cyan}{subcategory}{reset}")
+            self.tools.message(f"Number of wallpapers  : {cyan}{count}{reset}")
+            self.tools.message(f"Current wallpaper     : {cyan}{current}{reset}")
+            if self.data['auto']:
+                self.tools.message(f"Next wallpaper in     : {timeleft}")
+            
+            print()
+            print(f" [{cyan}1{reset}] Toggle Main category")
+            print(f" [{cyan}2{reset}] Change subcategory")
+            print()
+            print(f" [{cyan}3{reset}] Auto change wallpaper [{auto_color}{auto_check}{reset}]")
+            print(f" [{cyan}4{reset}] Randomize wallpaper   [{random_color}{random_check}{reset}]")
+            print(f" [{cyan}5{reset}] Change GRUB wallpaper [{grub_color}{grub_check}{reset}]")
+            print(f" [{cyan}6{reset}] Change SDDM wallpaper [{sddm_color}{sddm_check}{reset}]")
+            print()
+            print(f" [{cyan}7{reset}] Previous wallpaper")
+            print(f" [{cyan}8{reset}] Next wallpaper")
+            print(f" [{cyan}9{reset}] Random wallpaper")
+            print()
+            print(f" [{red}0{reset}] Quit")
+            print()
+            answer = self.tools.userinput('What would you like to do?')
+            if answer in ['0', 'q']:
+                loop = False
+            elif answer == '1':
+                self.togglecategory()
+                count = 0
+            elif answer == '2':
+                self.change_subcategory()
+                self.wallpapers = self.get_wallpapers()
+                count = self.count_wallpapers()
+            elif answer == "3":
+                self.toggle('auto')
+                self.toggle_autochange_wallpaper()
+            elif answer == "4":
+                self.toggle('random')
+                if self.data['random']:
+                    self.random_wallpaper()
+            elif answer == '5':
+                self.toggle('grub')
+            elif answer == '6':
+                self.toggle('sddm')
+            elif answer == '7':
+                 self.random_wallpaper()
+            elif answer in ['8', 'p', 'prev', 'previous']:
+                if self.data['random']:
+                    self.random_wallpaper()
+                else:
+                    self.previous_wallpaper()
+            elif answer in ['9', 'n', 'next']:
+                if self.data['random']:
+                    self.random_wallpaper()
+                else:
+                    self.next_wallpaper()
+            else:
+                self.tools.error("That doesn't seem to be right...")
+                sleep(2)
+            
+
+    def run(self, command=""):
+        if command == "":
+            self.show_mainmenu()
+        elif command == "next":
+            if self.data['random']:
+                self.random_wallpaper()
+            else:
+                self.next_wallpaper()
+        elif command in ['prev', 'previous']:
+            if self.data['random']:
+                self.random_wallpaper()
+            else:
+                self.previous_wallpaper()
+        elif command == 'info':
+            self.show_info()
+        elif command == 'auto':
+            self.toggle('auto')
+            self.toggle_autochange_wallpaper()
+            self.show_info()
+        elif command == 'random':
+            self.toggle('random')
+            if self.data['random']:
+                self.random_wallpaper()
+            self.show_info()
+        elif command == 'grub':
+            self.toggle('grub')
+            self.show_info()
+        elif command == 'sddm':
+            self.toggle('sddm')
+            self.show_info()
+        elif command == 'both':
+            self.toggle('grub')
+            self.toggle('sddm')
+            self.show_info()
+        elif command == 'all':
+            self.toggle('grub')
+            self.toggle('sddm')
+            self.toggle('random')
+            self.toggle('auto')
+            self.toggle_autochange_wallpaper()
+            if self.data['random']:
+                self.random_wallpaper()
+            self.show_info()
+        else:
+            self.tools.clear()
+            self.render_title()
+            self.tools.error("I didn't quite catch that...")
+            exit()
+
+
+if __name__ == "__main__":
+    wp = WallPaper()
+    if len(sys.argv) == 1:
+        wp.run()
+    else:
+        arg = sys.argv[1].lower()
+        arg = "" if arg == "config" else arg
+        wp.run(command=arg)
