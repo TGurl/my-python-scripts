@@ -1,2 +1,0 @@
-#!/usr/bin/env bash
-nvim -p laura tui.py game.py colors.py
