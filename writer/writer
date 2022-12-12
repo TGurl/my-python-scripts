@@ -1,130 +1,255 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import os
+import glob
+import datetime
 
-from shutil import get_terminal_size
 from time import sleep
-
+from random import randint
 
 class Colors:
-    res = "\033[0m"
-    bla = "\033[30m"
+    reset = "\033[0m"
+    black = "\033[30m"
     red = "\033[31m"
-    gre = "\033[32m"
-    yel = "\033[33m"
-    blu = "\033[34m"
-    pin = "\033[35m"
-    cya = "\033[36m"
-    whi = "\033[37m"
-
-
-class TUI:
-    def __init__(self):
-        self.colors = Colors()
-        self.prompt = "»"
-        self.sprompt = "·"
-
-    def message(self, message):
-        col = self.colors.gre
-        res = self.colors.res
-        print(f"{col}{self.prompt}{res} {message}")
-
-    def error(self, message):
-        col = self.colors.red
-        res = self.colors.res
-        print(f"{col}{self.prompt}{res} {message}")
-
-    def warning(self, message):
-        col = self.colors.yel
-        res = self.colors.res
-        print(f"{col}{self.prompt}{res} {message}")
-
-    def step(self, message):
-        col = self.colors.blu
-        res = self.colors.res
-        print(f"{col}{self.sprompt}{res} {message}")
-
-    def print_title(self, message):
-        yel = self.colors.yel
-        cya = self.colors.cya
-        res = self.colors.res
-        os.system('clear')
-        line = 20 * "─"
-        print(f"{yel}{line} {cya}{message} {yel}{line}{res}")
-
-    def print_line(self, message):
-        yel = self.colors.yel
-        res = self.colors.res
-        line = (42 + len(message)) * "─"
-        print(f"{yel}{line}{res}")
-
+    green = "\033[32m"
+    yellow = "\033[33m"
+    blue = "\033[34m"
+    pink = "\033[35m"
+    cyan = "\033[36m"
+    white = "\033[37m"
 
 class Writer:
     def __init__(self):
-        self.title = "Writer v0.1"
-        self.tui = TUI()
+        self.backups = False
+        self.delete = False
+        self.logo = self.get_logo()
         self.colors = Colors()
-        self.cwd = os.getcwd()
-        self.files = []
+        home = os.path.expanduser("~")
+        self.storydir = os.path.join(home, 'Dev', 'stories', 'wip')
+        scriptdir = os.path.dirname(os.path.realpath(__file__))
+        self.templatedir = os.path.join(scriptdir, 'templates')
 
-    def open_in_vim(self, filename):
-        notes = filename.split(".")
-        notes = notes[0] + "_notes." + notes[1]
-        cmd = f"vim -p {filename} {notes}"
+    def get_logo(self):
+        logo = [
+            " ________        __ __              ",
+            "|  |  |  |.----.|__|  |_.-----.----.",
+            "|  |  |  ||   _||  |   _|  -__|   _|",
+            "|________||__|  |__|____|_____|__|  ",
+            ""
+        ]
+        return logo
+
+    def show_header(self):
+        yel = self.colors.yellow
+        res = self.colors.reset
+
+        os.system('clear')
+        for line in self.logo:
+            print(f"{yel}{line}{res}")
+
+    def get_birthday(self, month):
+        if month == 2:
+            day = randint(1,28)
+        elif month in [1, 3, 5, 6, 8, 10, 12]:
+            day = randint(1, 31)
+        else:
+            day = randint(1, 30)
+        return day
+
+    def read_template(self, type="story"):
+        if type == "story":
+            filename = "template_story.md"
+        elif type == "notes":
+            filename = "template_notes.md"
+        else:
+            print("Unknown request! [READ_TEMPLATE]")
+            exit()
+
+        path = os.path.join(self.templatedir, filename)
+        with open(path, 'r') as f:
+            content = f.read().splitlines()
+        return content
+
+    def title(self, storyname):
+        storyname = storyname.replace(".md", "")
+        storyname = storyname.replace("_", " ")
+        storyname = storyname.replace(".backup", "")
+        return storyname.title()
+
+    def scan_stories(self):
+        stories = []
+        path = os.path.join(self.storydir, "*.md")
+        for file in glob.glob(path):
+            if self.backups:
+                if "backup" in file:
+                    file = file.split("/")[-1]
+                    stories.append(file)
+            else:
+                if "backup" not in file and "_notes" not in file:
+                    file = file.split('/')[-1]
+                    stories.append(file)
+        stories.sort()
+        return stories
+
+    def murder(self, story):
+        notes = story.replace(".", "_notes.")
+        story_path = os.path.join(self.storydir, story)
+        notes_path = os.path.join(self.storydir, notes)
+        os.remove(story_path)
+        if os.path.exists(notes_path):
+            os.remove(notes_path)
+
+    def get_input(self, query="") -> str:
+        blu = self.colors.blue
+        red = self.colors.red
+        res = self.colors.reset
+
+        query = f" {query}"
+        if self.backups:
+            prompt = f"{red}>{res}{query} "
+        elif self.delete:
+            prompt = f"{red}WARNING! THIS IS PERMANENT!\n{blu}>{res}{query} "
+        else:
+            prompt = f"{blu}>{res}{query} "
+        subloop = True
+        while subloop:
+            ans = input(prompt).lower()
+            if ans == "" or ans is None:
+                print(f"{red}!{res} Your answer can't be empty.")
+            else:
+                subloop = False
+        return ans
+
+    def open_in_vim(self, story):
+        notes = story.replace(".", "_notes.")
+        story = os.path.join(self.storydir, story)
+        notes = os.path.join(self.storydir, notes)
+        cmd = f"vim -p {story} {notes}"
         os.system(cmd)
+        self.backups = False
 
-    def get_all_md_files(self):
-        self.files = []
-        remove = ["_notes", "_old"]
-        for item in os.scandir(self.cwd):
-            filename = item.name
-            keep = True
-            for test in remove:
-                if test in filename:
-                    keep = False
-            if keep:
-                if item.name.endswith(".md"):
-                    self.files.append(filename)
-        self.files.sort()
+    def new_story(self):
+        res = self.colors.reset
+        yel = self.colors.yellow
+        logo = self.get_logo()
+
+        os.system('clear')
+        for line in logo:
+            print(f"{yel}{line}{res}")
+        title = self.get_input("What is the title of the story?")
+        name = self.get_input("What is her name?")
+        age = self.get_input("What is her age?")
+        cup = self.get_input("What is her cupsize?")
+        job = self.get_input("What does she do for a living?")
+
+        bust = randint(34, 46)
+        hips = bust + randint(3, 6)
+        waist = randint(22, 28)
+        numbers = f"{bust}{cup.upper()} - {waist} - {hips}"
+
+        storyname = title.replace(" ", "_")
+        notesname = storyname + "_notes"
+        story_template = self.read_template(type="story")
+        notes_template = self.read_template(type="notes")
+
+        today = datetime.datetime.now()
+        birthyear = str(today.year - int(age))
+        birthmonth = randint(1, 12)
+        birthday = self.get_birthday(birthmonth)
+        dob = f"{birthyear}-{birthmonth}-{birthday}"
+
+        story = []
+        notes = []
+
+        for line in story_template:
+            line = line.replace("<TITLE>", title.title())
+            story.append(line)
+
+        for line in notes_template:
+            line = line.replace("<TITLE>", title.title())
+            line = line.replace("<NAME>", name.title())
+            line = line.replace("<MEASUREMENTS>", numbers)
+            line = line.replace("<OCCUPATION>", job.title())
+            line = line.replace("<AGE>", age)
+            line = line.replace("<DOB>", dob)
+            notes.append(line)
+        
+        path = os.path.join(self.storydir, storyname + ".md")
+        with open(path, "w") as f:
+            for line in story:
+                f.write(f"{line}\n")
+
+        path = os.path.join(self.storydir, notesname + ".md")
+        with open(path, "w") as f:
+            for line in notes:
+                f.write(f"{line}\n")
+
+    def show_menu(self, stories):
+        cya = self.colors.cyan
+        red = self.colors.red
+        gre = self.colors.green
+        yel = self.colors.yellow
+        res = self.colors.reset
+
+        if self.backups or self.delete:
+            valid_input = ['q']
+        else:
+            valid_input = ['q', 'd', 'n', 'b']
+
+        if self.backups:
+            print(f"{gre}>>> BACKUPS <<<{res}", end="\n\n")
+        elif self.delete:
+            print(f"{red}>>> DELETE <<<{res}", end="\n\n")
+        else:
+            print(f"{gre}>>> MAIN MENU <<<{res}", end="\n\n")
+
+        for c, story in enumerate(stories):
+            story = self.title(story)
+            print(f"[{yel}{c + 1}{res}] {story}")
+            valid_input.append(str(c + 1))
+        print()
+
+        if self.backups:
+            print(f"[{cya}d{res}] Delete backup", end="\n\n")
+            print(f"[{red}q{res}] Return to main menu", end="\n\n")
+        elif self.delete:
+            print(f"[{red}q{res}] Return to main menu", end="\n\n")
+        else:
+            print(f"[{cya}n{res}] New story")
+            print(f"[{cya}b{res}] Backups")
+            print(f"[{cya}d{res}] Delete story", end="\n\n")
+            print(f"[{red}q{res}] Quit", end="\n\n")
+        return valid_input
 
     def run(self):
-        col = self.colors.gre
-        yel = self.colors.yel
-        res = self.colors.res
-        valid = ["0", "q", "g"]
         loop = True
-
         while loop:
-            self.get_all_md_files()
-            self.tui.print_title(self.title)
-            for c, item in enumerate(self.files):
-                title = item.replace(".md", "").replace("_", " ").title()
-                if title == "Backup":
-                    title = "latest backup"
+            self.show_header()
+            stories = self.scan_stories()
+            valid = self.show_menu(stories)
+            ans = self.get_input()
+            if ans not in valid:
+                print("That is not an option.")
+            elif ans in ['q', 'quit']:
+                if self.backups:
+                    self.backups = False
+                elif self.delete:
+                    self.delete = False
                 else:
-                    title = f"'{yel}{title}{res}'"
-                print(f"{c+1}. Edit {title}")
-                valid.append(str(c + 1))
-            print()
-            print("G. Generate new story")
-            print("0. Quit")
-            self.tui.print_line(self.title)
-            answer = input(f"{col}»{res} What would you like to do? ").lower()
-            if answer not in valid:
-                self.tui.error("That's not an option, please try again.")
-                sleep(2)
-            else:
-                if answer in ["0", "q"]:
                     loop = False
-                elif answer == "g":
-                    self.tui.message("Let's start a new story...")
-                    os.system('genstory')
-                    self.get_all_md_files()
-                    sleep(0.5)
+            elif ans in ['d', 'delete']:
+                self.delete = True
+            elif ans in ['n', 'new']:
+                self.new_story()
+            elif ans in ['b', 'backup', 'backups']:
+                self.backups = True
+            else:
+                story = stories[int(ans) - 1]
+                if self.delete:
+                    self.murder(story)
+                    self.delete = False
                 else:
-                    filename = self.files[int(answer) - 1]
-                    self.open_in_vim(filename)
-
+                    self.open_in_vim(story)
 
 if __name__ == "__main__":
     writer = Writer()

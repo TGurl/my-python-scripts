@@ -1,0 +1,279 @@
+#!/usr/bin/env python
+
+import os
+import glob
+import datetime
+from random import randint
+
+
+class Colors:
+    reset = "\033[0m"
+    black = "\033[30m"
+    red = "\033[31m"
+    green = "\033[32m"
+    yellow = "\033[33m"
+    blue = "\033[34m"
+    pink = "\033[35m"
+    cyan = "\033[36m"
+    white = "\033[37m"
+
+class Writer:
+    def __init__(self):
+        home = os.path.expanduser("~")
+        self.storydir = os.path.join(home, 'Dev', 'stories', 'wip')
+        scriptdir = os.path.dirname(os.path.realpath(__file__))
+        self.templatedir = os.path.join(scriptdir, 'templates')
+        self.colors = Colors()
+        self.backups = False
+
+    def get_logo(self):
+        logo = [
+            " ________        __ __              ",
+            "|  |  |  |.----.|__|  |_.-----.----.",
+            "|  |  |  ||   _||  |   _|  -__|   _|",
+            "|________||__|  |__|____|_____|__|  ",
+            ""
+        ]
+        return logo
+
+    def read_template(self, type="story"):
+        if type == "story":
+            filename = "template_story.md"
+        elif type == "notes":
+            filename = "template_notes.md"
+        else:
+            print("Unknown request! [READ_TEMPLATE]")
+            exit()
+
+        path = os.path.join(self.templatedir, filename)
+        with open(path, 'r') as f:
+            content = f.read().splitlines()
+        return content
+
+    def get_input(self, query) -> str:
+        blu = self.colors.blue
+        red = self.colors.red
+        res = self.colors.reset
+        ans = ""
+        subloop = True
+        while subloop:
+            ans = input(f"{blu}>{res} {query} : ")
+            if ans == "" or ans is None:
+                print(f"{red}>{res} Your answer can't be empty.")
+            else:
+                subloop = False
+        return ans.lower()
+
+    def get_birthday(self, month):
+        if month == 2:
+            day = randint(1,28)
+        elif month in [1, 3, 5, 6, 8, 10, 12]:
+            day = randint(1, 31)
+        else:
+            day = randint(1, 30)
+        return day
+
+    def new_story(self):
+        res = self.colors.reset
+        yel = self.colors.yellow
+        logo = self.get_logo()
+
+        os.system('clear')
+        for line in logo:
+            print(f"{yel}{line}{res}")
+        title = self.get_input("What is the title of the story?")
+        name = self.get_input("What is her name?")
+        age = self.get_input("What is her age?")
+        cup = self.get_input("What is her cupsize?")
+        job = self.get_input("What does she do for a living?")
+
+        bust = randint(34, 46)
+        hips = bust + randint(3, 6)
+        waist = randint(22, 28)
+        numbers = f"{bust}{cup.upper()} - {waist} - {hips}"
+
+        storyname = title.replace(" ", "_")
+        notesname = storyname + "_notes"
+        story_template = self.read_template(type="story")
+        notes_template = self.read_template(type="notes")
+
+        today = datetime.datetime.now()
+        birthyear = str(today.year - int(age))
+        birthmonth = randint(1, 12)
+        birthday = self.get_birthday(birthmonth)
+        dob = f"{birthyear}-{birthmonth}-{birthday}"
+
+        story = []
+        notes = []
+
+        for line in story_template:
+            line = line.replace("<TITLE>", title.title())
+            story.append(line)
+
+        for line in notes_template:
+            line = line.replace("<TITLE>", title.title())
+            line = line.replace("<NAME>", name.title())
+            line = line.replace("<MEASUREMENTS>", numbers)
+            line = line.replace("<OCCUPATION>", job.title())
+            line = line.replace("<AGE>", age)
+            line = line.replace("<DOB>", dob)
+            notes.append(line)
+
+        path = os.path.join(self.storydir, storyname + ".md")
+        with open(path, "w") as f:
+            for line in story:
+                f.write(f"{line}\n")
+
+        path = os.path.join(self.storydir, notesname + ".md")
+        with open(path, "w") as f:
+            for line in notes:
+                f.write(f"{line}\n")
+
+    def get_stories(self):
+        stories = []
+        for file in glob.glob(f"{self.storydir}/*.md"):
+            if self.backups:
+                if "backup" in file:
+                    file = file.split('/')[-1]
+                    stories.append(file)
+            else:
+                if "_notes" not in file and "backup" not in file:
+                    file = file.split('/')[-1]
+                    stories.append(file)
+        return stories
+
+    def open_in_vim(self, story):
+        if ".md" not in story:
+            story += ".md"
+        notes = story.replace(".", "_notes.")
+        story = os.path.join(self.storydir, story)
+        notes = os.path.join(self.storydir, notes)
+        cmd = f"vim -p {story} {notes}"
+        os.system(cmd)
+
+    def murder(self, story):
+        notes = story.replace(".", "_notes.")
+        story_path = os.path.join(self.storydir, story)
+        notes_path = os.path.join(self.storydir, notes)
+        os.remove(story_path)
+        os.remove(notes_path)
+
+    def delete_story(self, stories):
+        res = self.colors.reset
+        yel = self.colors.yellow
+        cya = self.colors.cyan
+        blu = self.colors.blue
+        red = self.colors.red
+
+        valid_input = ['q']
+        logo = self.get_logo()
+        subloop = True
+
+        os.system('clear')
+        for line in logo:
+            print(f"{yel}{line}{res}")
+        print(f"{red}BE CAREFUL, THIS IS PERMANENT!{res}")
+        print()
+        for c, story in enumerate(stories):
+            title = story.replace(".md", "").replace("_", " ").title()
+            print(f"[{cya}{c + 1}{res}] {yel}{title}{res}")
+            valid_input.append(str(c + 1))
+        print()
+        prompt = "Which story do you want to delete?"
+        ans = ""
+        subloop = True
+        while subloop:
+            ans = input(prompt).lower()
+            if ans not in valid_input:
+                print(f"{red}>{res} That is not an option...")
+            else:
+                subloop = False
+        if ans in ['q', 'quit']:
+            return False
+        else:
+            self.murder(stories[int(ans) - 1])
+
+    def show_backups(self, stories):
+        res = self.colors.reset
+        yel = self.colors.yellow
+        cya = self.colors.cyan
+        blu = self.colors.blue
+        red = self.colors.red
+
+        logo = self.get_logo()
+        valid_input = ['q']
+        subloop = True
+
+        os.system('clear')
+        for line in logo:
+            print(f"{yel}{line}{res}")
+        for c, story in enumerate(stories):
+            title = story.replace(".md", "").replace("_", " ").title()
+            print(f"[{cya}{c + 1}{res}] {yel}{title}{res}")
+            valid_input.append(str(c + 1))
+        print()
+        print(f"[{cya}q{res}] {red}Quit{res}", end="\n\n")
+        prompt = "Which story do you want to restore?"
+
+        while subloop:
+            ans = self.get_input(prompt)
+            if ans not in valid_input:
+                print(f"{red}>{res} That is not an option...")
+            elif ans in ['q', 'quit']:
+                self.backups = False
+                subloop = False
+            else:
+                self.open_in_vim(stories[int(ans) - 1])
+
+    def show_menu(self, stories):
+        res = self.colors.reset
+        yel = self.colors.yellow
+        gre = self.colors.green
+        cya = self.colors.cyan
+        blu = self.colors.blue
+        red = self.colors.red
+
+        logo = self.get_logo()
+        valid_input = ['q', 'n', 'd', 'b']
+
+        os.system('clear')
+        for line in logo:
+            print(f"{yel}{line}{res}")
+
+        for c, story in enumerate(stories):
+            title = story.replace(".md", "").replace("_", " ").title()
+            print(f"[{cya}{c + 1}{res}] {yel}{title}{res}")
+            valid_input.append(str(c + 1))
+        print()
+        print(f"[{cya}n{res}] {gre}New Story{res}")
+        print(f"[{cya}d{res}] {gre}Delete Story{res}")
+        print(f"[{cya}b{res}] {gre}Restore Backup{res}")
+        print(f"[{cya}q{res}] {red}Quit{res}", end="\n\n")
+        prompt = "Which story do you want to write?"
+        ans = self.get_input(prompt)
+        if ans not in valid_input:
+            print(f"{red}>{res} That is not an option...")
+        else:
+            return ans
+
+    def run(self):
+        loop = True
+        ans = ""
+        while loop:
+            stories = self.get_stories()
+            ans = self.show_menu(stories)
+            if ans in ['q', 'quit']:
+                loop = False
+            elif ans in ['n', 'new']:
+                self.new_story()
+            elif ans in ['d', 'delete']:
+                self.delete_story(stories)
+            elif ans in ['b', 'backups']:
+                self.backups = True
+            else:
+                self.open_in_vim(stories[int(ans) - 1])
+
+
+if __name__ == "__main__":
+    writer = Writer()
+    writer.run()

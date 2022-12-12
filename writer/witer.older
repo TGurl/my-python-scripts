@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+
+import os
+
+from shutil import get_terminal_size
+from time import sleep
+
+
+class Colors:
+    res = "\033[0m"
+    bla = "\033[30m"
+    red = "\033[31m"
+    gre = "\033[32m"
+    yel = "\033[33m"
+    blu = "\033[34m"
+    pin = "\033[35m"
+    cya = "\033[36m"
+    whi = "\033[37m"
+
+
+class TUI:
+    def __init__(self):
+        self.colors = Colors()
+        self.prompt = "»"
+        self.sprompt = "·"
+
+    def message(self, message):
+        col = self.colors.gre
+        res = self.colors.res
+        print(f"{col}{self.prompt}{res} {message}")
+
+    def error(self, message):
+        col = self.colors.red
+        res = self.colors.res
+        print(f"{col}{self.prompt}{res} {message}")
+
+    def warning(self, message):
+        col = self.colors.yel
+        res = self.colors.res
+        print(f"{col}{self.prompt}{res} {message}")
+
+    def step(self, message):
+        col = self.colors.blu
+        res = self.colors.res
+        print(f"{col}{self.sprompt}{res} {message}")
+
+    def print_title(self, message):
+        yel = self.colors.yel
+        cya = self.colors.cya
+        res = self.colors.res
+        os.system('clear')
+        line = 20 * "─"
+        print(f"{yel}{line} {cya}{message} {yel}{line}{res}")
+
+    def print_line(self, message):
+        yel = self.colors.yel
+        res = self.colors.res
+        line = (42 + len(message)) * "─"
+        print(f"{yel}{line}{res}")
+
+
+class Writer:
+    def __init__(self):
+        self.title = "Writer v0.1"
+        self.tui = TUI()
+        self.colors = Colors()
+        self.cwd = os.getcwd()
+        self.files = []
+
+    def open_in_vim(self, filename):
+        notes = filename.split(".")
+        notes = notes[0] + "_notes." + notes[1]
+        cmd = f"vim -p {filename} {notes}"
+        os.system(cmd)
+
+    def get_all_md_files(self):
+        self.files = []
+        remove = ["_notes", "_old"]
+        for item in os.scandir(self.cwd):
+            filename = item.name
+            keep = True
+            for test in remove:
+                if test in filename:
+                    keep = False
+            if keep:
+                if item.name.endswith(".md"):
+                    self.files.append(filename)
+        self.files.sort()
+
+    def run(self):
+        col = self.colors.gre
+        yel = self.colors.yel
+        res = self.colors.res
+        valid = ["0", "q", "g"]
+        loop = True
+
+        while loop:
+            self.get_all_md_files()
+            self.tui.print_title(self.title)
+            for c, item in enumerate(self.files):
+                title = item.replace(".md", "").replace("_", " ").title()
+                if title == "Backup":
+                    title = "latest backup"
+                else:
+                    title = f"'{yel}{title}{res}'"
+                print(f"{c+1}. Edit {title}")
+                valid.append(str(c + 1))
+            print()
+            print("G. Generate new story")
+            print("0. Quit")
+            self.tui.print_line(self.title)
+            answer = input(f"{col}»{res} What would you like to do? ").lower()
+            if answer not in valid:
+                self.tui.error("That's not an option, please try again.")
+                sleep(2)
+            else:
+                if answer in ["0", "q"]:
+                    loop = False
+                elif answer == "g":
+                    self.tui.message("Let's start a new story...")
+                    os.system('genstory')
+                    self.get_all_md_files()
+                    sleep(0.5)
+                else:
+                    filename = self.files[int(answer) - 1]
+                    self.open_in_vim(filename)
+
+
+if __name__ == "__main__":
+    writer = Writer()
+    writer.run()

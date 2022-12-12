@@ -11,7 +11,8 @@ pornstars = [
     'lorna_morgan',
     'sara_jay',
     'dee_williams',
-    'kristina_milan'
+    'kristina_milan',
+    'juliette_michele'
 ]
 
 [template]
@@ -37,6 +38,30 @@ active = false
 since = 0
 retired = 0
 rating = 0
+
+[juliette_michele]
+id = "juliette_michele"
+name = "Juliette Michele"
+alias = "Bishoujo Mom"
+birthdate = "1998/11"
+ethnicity = "Caucasian"
+nationality = "American"
+eyecolor = "Green"
+haircolor = "Red"
+height = 162
+weight = 68
+bust = 36
+waist = 28
+hips = 40
+cup = "G"
+boobs = "Fake"
+tattoos = "none"
+piercings = "none"
+shoesize = 0
+active = true
+since = 2016
+retired = false
+rating = 9
 
 [lucie_wilde]
 id = "lucie_wilde"

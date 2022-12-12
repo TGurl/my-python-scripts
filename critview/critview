@@ -1,195 +1,214 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import os
 import sys
-import signal
+import select
+import toml
 
-from pytube import YouTube, Playlist
-from time import sleep
+from pytube import Playlist, YouTube
 
-
-# -------------------------------------------------------
-# --- Class Colors
-# -------------------------------------------------------
 class Colors:
-    res = "\033[0m"
-    bla = "\033[30;1m"
-    red = "\033[31;1m"
-    gre = "\033[32;1m"
-    yel = "\033[33;1m"
-    blu = "\033[34;1m"
-    pin = "\033[35;1m"
-    cya = "\033[36;1m"
-    whi = "\033[37;1m"
-    gray = "\033[37m"
+    reset = "\033[0m"
+    black = "\033[30m"
+    red = "\033[31m"
+    green = "\033[32m"
+    yellow = "\033[33m"
+    blue = "\033[34m"
+    pink = "\033[35m"
+    cyan = "\033[36m"
+    white = "\033[37m"
 
 
-# -------------------------------------------------------
-# --- Class YouTube
-# -------------------------------------------------------
-class YouTubeDL:
+class Tools:
     def __init__(self):
-        self.plurl = "https://www.youtube.com/playlist?list=<-ID->"
-        self.vurl = "https://www.youtube.com/watch?v=<-ID->"
+        self.colors = Colors()
+        self.scriptdir = os.path.abspath(os.path.dirname(__file__))
+        self.configfile = os.path.join(self.scriptdir, 'config.toml')
+        
 
-    def fetch_playlist(self, plid):
-        print(">> Fetching playlist...")
-        url = self.plurl.replace("<-ID->", plid)
-        # cursor up one line
-        sys.stdout.write('\x1b[1A')
-        # delete last line
-        sys.stdout.write('\x1b[2K')
-        return Playlist(url)
+    # -----------------------------------------------------------------------------
+    # --- Messages
+    # -----------------------------------------------------------------------------
+    def message(self, msg):
+        col = self.colors.green
+        res = self.colors.reset
+        print(f"{col}>{res} {msg}")
 
-    def fetch_video_title(self, vid, oneshot=False):
-        url = self.vurl.replace("<-ID->", vid)
+    def warning(self, msg):
+        col = self.colors.yellow
+        res = self.colors.reset
+        print(f"{col}>{res} {msg}")
+
+    def error(self, msg):
+        col = self.colors.red
+        res = self.colors.reset
+        print(f"{col}>{res} {msg}")
+
+    def steptaken(self, msg):
+        col = self.colors.blue
+        res = self.colors.reset
+        print(f"{col}>{res} {msg}")
+
+    def debug(self, msg):
+        col = self.colors.pink
+        res = self.colors.reset
+        print(f"{col}>{res} {msg}")
+
+    def notify(self, msg):
+        cmd = f"notify-send -u low '{msg}'"
+        os.system(cmd)
+
+    # -----------------------------------------------------------------------------
+    # --- Get Input from User
+    # -----------------------------------------------------------------------------
+    def timeout_input(self, prompt, timeout=3, default=""):
+        print(prompt, end=": ", flush=True)
+        inputs, _, _ = select.select([sys.stdin], [], [], timeout)
+        print()
+        return (0, sys.stdin.readline().strip()) if inputs else (-1, default)
+
+    # -----------------------------------------------------------------------------
+    # --- TOML
+    # -----------------------------------------------------------------------------
+    def read_toml(self):
+        with open(self.configfile, 'r') as f:
+            data = toml.load(f)
+        return data
+
+    def save_toml(self, data):
+        with open(self.configfile, 'w') as f:
+            toml.dump(data, f)
+
+    # -----------------------------------------------------------------------------
+    # --- YouTube
+    # -----------------------------------------------------------------------------
+    def get_title(self, url):
         yt = YouTube(url)
-        if not oneshot:
+        if " | " in yt.title:
             title = yt.title.split(" | ")[0]
-        else:
-            title = yt.title
         return title
 
-
-# -------------------------------------------------------
-# --- Class Terminal User Interface (TUI)
-# -------------------------------------------------------
-class TUI:
-    def __init__(self) -> None:
-        self.colors = Colors()
-        self.titles = [
-            "Vox Machina",
-            "Mighty Nein",
-            "Bells Hells",
-            "One Shots"
-        ]
-        self.plids = [
-            "PL1tiwbzkOjQz7D0l_eLJGAISVtcL7oRu_",
-            "PL1tiwbzkOjQxD0jjAE7PsWoaCrs0EkBH2",
-            "PL1tiwbzkOjQydg3QOkBLG9OYqWJ0dwlxF",
-            "PL1tiwbzkOjQyUR1nbxZGETYMZRCcfV6yL"
-        ]
-
-    def return_title(self, idx):
-        return self.titles[idx]
-
-    def return_plid(self, idx):
-        return self.plids[idx]
-
-    def print_title(self):
-        col = self.colors.yel
-        res = self.colors.res
-        line = 7 * "─"
-        os.system('clear')
-        print(f"{col}{line}{res} CritView {col}{line}{res}")
-
-    def print_menu(self, watch_in_hd=False, single=False):
-        valid = ["q", "h", "e"]
-        self.print_title()
-        for c, item in enumerate(self.titles):
-            valid.append(str(c + 1))
-            print(f"{c + 1}. {item}")
-        print()
-        if watch_in_hd:
-            resolution = "HD"
-        else:
-            resolution = "SD"
-
-        if single:
-            play_single = "Watch a specific episode"
-        else:
-            play_single = "Continue series"
-
-        print(f"e. {play_single}")
-        print(f"h. Watch in {resolution}")
-        print("q. Quit")
-        print()
-        return valid
+    def get_playlist(self, streamID):
+        url = f"https://www.youtube.com/playlist?list={streamID}"
+        p = Playlist(url)
+        return p
 
 
 class CritView:
-    def __init__(self) -> None:
-        self.tui = TUI()
+    def __init__(self):
+        self.tools = Tools()
+        self.config = self.tools.read_toml()
+        self.debug = False
         self.hd = False
-        self.single = False
-        self.oneshot = False
-        self.ytdl = YouTubeDL()
+        self.vm = False
+        self.m9 = False
+        self.bh = False
+        self.os = False
+        self.voxmachina = "PL1tiwbzkOjQz7D0l_eLJGAISVtcL7oRu_"
+        self.mightynein = "PL1tiwbzkOjQxD0jjAE7PsWoaCrs0EkBH2"
+        self.bellshells = "PL1tiwbzkOjQydg3QOkBLG9OYqWJ0dwlxF"
+        self.oneshots = "PL1tiwbzkOjQyUR1nbxZGETYMZRCcfV6yL"
 
-    def handler(self, signum, frame):
-        _ = signum
-        _ = frame
-        os.system('clear')
-        print(">> CTRL-C detected. Script terminated.")
-        exit()
+    def check_args(self, args):
+        if 'hd' in args:
+            self.hd = True
 
-    def get_video_title(self, vid):
-        title = self.ytdl.fetch_video_title(vid)
-        return title
+        count = 0        
+        if 'vm' in args:
+            if self.debug:
+                self.tools.debug("Playing Vox Machina")
+            self.vm = True
+            count += 1
 
-    def get_playlist(self, plid):
-        playlist = self.ytdl.fetch_playlist(plid)
+        if 'm9' in args:
+            if self.debug:
+                self.tools.debug("Playing Mighty Nein")
+            self.m9 = True
+            count += 1
+
+        if 'bh' in args:
+            if self.debug:
+                self.tools.debug("Playing Bells Hells")
+            self.bh = True
+            count += 1
+
+        if 'os' in args:
+            if self.debug:
+                self.tools.debug("Playing One Shots")
+            self.bh = True
+            count += 1
+
+        if count > 1:
+            print("You can't watch them all at once,")
+            print("You will have to make a choice...")
+            exit()
+
+    def fetch_voxmachina(self):
+        self.tools.notify("Fetching Vox Machina Playlist...")
+        playlist = self.tools.get_playlist(self.voxmachina)
         return playlist
 
-    def ask_for_episode(self, total):
-        subloop = True
-        answer = ""
-        while subloop:
-            answer = input(
-                f"Which episode do you want to see (0..{total})? : "
-            )
-            if answer.isnumeric() and int(answer) <= total:
-                subloop = False
-            else:
-                print(f">> Please enter a number between 0 and {total}!")
-                sleep(2)
-        return int(answer)
+    def fetch_mightynein(self):
+        self.tools.notify("Fetching Mighty Nein Playlist...")
+        playlist = self.tools.get_playlist(self.mightynein)
+        return playlist
+
+    def fetch_bellshells(self):
+        self.tools.notify("Fetching Bells Hells Playlist...")
+        playlist = self.tools.get_playlist(self.bellshells)
+        return playlist
+
+    def fetch_oneshots(self):
+        self.tools.notify("Fetching One Shot Playlist...")
+        playlist = self.tools.get_playlist(self.oneshots)
+        return playlist
+
+    def start_playing(self):
+        if self.vm:
+            playlist = self.fetch_voxmachina()
+            lastvideoID = self.config['last_voxmachina']
+        elif self.m9:
+            playlist = self.fetch_mightynein()
+            lastvideoID = self.config['last_mightynein']
+        elif self.bh:
+            playlist = self.fetch_bellshells()
+            lastvideoID = self.config['last_bellshells']
+        elif self.os:
+            playlist = self.oneshots()
+            lastvideoID = self.config['last_oneshots']
+        else:
+            self.tools.error("That's not something from Critical Role, I think...")
+            exit()
+
+        videoURL = playlist[lastvideoID]
+        title = self.tools.get_title(videoURL)
+
+        if self.debug:
+            self.tools.debug(f"Title : '{title}'")
+            self.tools.debug(f"Last VideoURL: {videoURL}")
+            self.tools.debug(f"Last VideoID : {lastvideoID}")
+
+        self.tools.notify(f"Playing: {title}")
+        cmd = f"mpv -hwdec --slang=en {videoURL}"
+        os.system(cmd)
+        answer = self.tools.timeout_input('Continue to the next episode? (Y/n): ', timeout=5, default='y')
+        print(answer)
+
+        
 
 
-    def play_playlist(self, idx, oneshot):
-        self.tui.print_title()
-        plid = self.tui.return_plid(idx)
-        playlist = self.get_playlist(plid)
-        total = len(playlist)
-
-        if self.single:
-            result = self.ask_for_episode(total)
-            vid = playlist[result + 1]
-            title = self.ytdl.fetch_video_title(vid, oneshot)
-            print(title)
-            sleep(2)
+    def run(self, args=[]):
+        if len(args) > 0:
+            self.check_args(args)
+            self.start_playing()
         else:
             pass
-
-    def run(self):
-        signal.signal(signal.SIGINT, self.handler)
-        loop = True
-        while loop:
-            self.oneshot = False
-            valid = self.tui.print_menu(
-                watch_in_hd=self.hd,
-                single=self.single
-            )
-            answer = input("> What do you want to do today? : ").lower()
-            if answer == "h":
-                self.hd = not self.hd
-            elif answer == "e":
-                self.single = not self.single
-            elif answer == "q":
-                loop = False
-            elif answer in valid:
-                if answer == "4":
-                    self.oneshot = True
-                idx = int(answer) - 1
-                self.play_playlist(idx, self.oneshot)
-                sleep(3)
-            else:
-                print(">> You rolled a natural one...")
-                sleep(1)
-
-        os.system('clear')
-        print("Bye!")
+        
 
 
 if __name__ == "__main__":
-    critview = CritView()
-    critview.run()
+    cv = CritView()
+    if len(sys.argv) > 1:
+        cv.run(sys.argv[1:])
+    else:
+        cv.run()
