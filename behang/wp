@@ -238,7 +238,7 @@ class Tools:
                 self.error("That doesn't seem quit right...")
                 sleep(2)
             else:
-                answer = default if answer=="" else answer
+                answer = default if answer == "" else answer
                 subloop = False
         return answer
 

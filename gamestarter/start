@@ -1,0 +1,89 @@
+#!/usr/bin/env python
+import os
+import fnmatch
+import toml
+from time import sleep
+
+
+class Starter:
+    def __init__(self):
+        self.config = self.read_config()
+        self.valid = []
+
+    def read_config(self):
+        with open("config.toml", "r") as fp:
+            data = toml.load(fp)
+        return data
+
+    def exit_app(self):
+        os.system('clear')
+        print(f"Thanks for playing {self.config['title']}")
+
+    def show_extra_info(self):
+        os.system('clear')
+        print(self.config['extra_info'])
+        _ = input("> press [ENTER] to continue...")
+
+    def runner(self, chosen):
+        chosen = int(chosen) - 1
+        folder = self.config['folders'][chosen]
+        script = fnmatch.filter(os.listdir(folder), '*.sh')
+        path = os.path.join(folder, script[0])
+        os.system(f"sh {path}")
+
+    def run_then_all(self):
+        for num, _ in enumerate(self.config['titles'], start=1):
+            self.runner(str(num))
+
+    def render_menu(self):
+        line = (len(self.config['title']) + 2) * "-"
+        os.system('clear')
+        print(line)
+        print(f" {self.config['title']}")
+        print(line, end="\n\n")
+        if self.config['show_warning']:
+            print("!! PLAY IN ORDER !!", end="\n\n")
+
+        for num, item in enumerate(self.config['titles'], start=1):
+            print(f"[{num}] {item}")
+            self.valid.append(str(num))
+        print()
+        if self.config['play_all_games']:
+            print("[a] Play all")
+
+        if self.config['show_info']:
+            print("[i] Extra info")
+        print("[q] Quit", end="\n\n")
+
+    def print_error(self):
+        print(">> That doesn't seem to be an option...")
+        sleep(1)
+
+    def run(self):
+        self.read_config()
+        running = True
+        while running:
+            self.render_menu()
+            chosen = input("> ").lower()
+            if chosen in ['q', 'quit']:
+                running = False
+            elif chosen in self.valid:
+                self.runner(chosen)
+            elif chosen in ['i', 'info']:
+                if self.config['show_info']:
+                    self.show_extra_info()
+                else:
+                    self.print_error()
+            elif chosen in ['a', 'all']:
+                if self.config['play_all_games']:
+                    self.run_then_all()
+                else:
+                    self.print_error()
+            else:
+                self.print_error()
+        self.exit_app()
+
+
+if __name__ == "__main__":
+    app = Starter()
+    app.run()

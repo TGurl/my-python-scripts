@@ -1,0 +1,87 @@
+#!/usr/bin/env python
+import os
+import zipfile
+import pathlib
+import argparse
+import shutil
+from time import sleep
+
+
+class TUI:
+    def __init__(self):
+        self.title = "Zipper v0.1"
+
+    def hide_cursor(self):
+        print('\033[?25l', end='')
+
+    def show_cursor(self):
+        print('\033[?25h', end='')
+
+    def show_percentage(self, files, counter, filename):
+        length = len(files)
+        line_up = '\033[1A'
+        line_clear = '\x1b[2K'
+
+        percentage = round((counter / length) * 100)
+        msg = f"> {percentage:3}% - {filename}"
+        print(msg)
+        sleep(0.001)
+        print(line_up, end=line_clear)
+
+
+class Zipper:
+    def __init__(self, args):
+        self.destination = args.dest
+        self.folder = args.folder
+        self.tui = TUI()
+        self.files = self.collect_all_files(self.folder)
+        self.zipfile = self.folder + ".zip"
+
+    def collect_all_files(self, folder):
+        directory = pathlib.Path(folder)
+        files = []
+        for file_path in directory.rglob("*"):
+            files.append(file_path)
+        return files
+
+    def evaluate_destination(self):
+        if self.destination is not None:
+            match self.destination:
+                case 'usb':
+                    self.destination = os.path.expanduser(
+                        os.path.join('~', 'USB', 'sexgames')
+                    )
+                case 'keep':
+                    self.destination = os.path.expanduser(
+                        os.path.join('~', 'USB', 'sexgames', 'keep')
+                    )
+        else:
+            self.destination = os.path.expanduser(
+                os.path.join('~', 'Games', 'archive')
+            )
+
+    def run(self):
+        counter = 0
+        self.evaluate_destination()
+        print("Zipper v0.1", end='\n\n')
+        print(f"> Creating {self.zipfile}")
+        self.tui.hide_cursor()
+        with zipfile.ZipFile(self.zipfile, mode="w") as archive:
+            for file in self.files:
+                self.tui.show_percentage(self.files, counter, file)
+                archive.write(file)
+                counter += 1
+        self.tui.show_cursor()
+        print("> 100%")
+        print(f"> Moving {self.zipfile} to {self.destination}")
+        shutil.move(self.zipfile, self.destination)
+        print("> Done!")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('folder')
+    parser.add_argument('-d', '--dest', required=False)
+    args = parser.parse_args()
+    app = Zipper(args)
+    app.run()

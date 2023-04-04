@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+# -------------------------------------------------
+# A complete rewrite from the grounds up of
+# this script. I want to implement new ideas
+# of how to do this, no more frills like colors
+# etc. Just a basic script, that does what it
+# promises to do.
+#
+# Changelog:
+#
+# 2023-03-21    - Started new version
+# -------------------------------------------------
+import os
+
+
+class WallhavenDL:
+    def __init__(self):
+        self.title = "WallhavenDL"
+        self.version = "v8.01"
+
+    def show_header(self):
+        os.system('clear')
+        title = f"{self.title} {self.version}"
+        length = len(title) + 2
+        print(length * "-")
+        print(f" {title}")
+        print(length * "-", end="\n\n")
+
+    def run(self):
+        self.show_header()
+
+if __name__ == "__main__":
+    app = WallhavenDL()
+    app.run()

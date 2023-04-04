@@ -1,0 +1,26 @@
+title = "Testing Games"
+play_all_games = false
+show_warning = false
+show_info = false
+
+titles = [
+    "Test 1",
+    "Test 2",
+    "Test 3"
+]
+
+folders = [
+    "test01",
+    "test02",
+    "test03"
+]
+
+extra_info = """\
+# Extra Info
+
+This is some extra information
+to show, like how you have to
+export settings in order to play
+the next chapter
+"""
+
