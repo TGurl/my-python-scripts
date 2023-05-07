@@ -20,6 +20,7 @@ class Zipit(Utils):
         num_digits = len(str(total_files))
         count = 0
 
+        print()  # To preserve the title
         with zipfile.ZipFile(zipfilename, 'w',
                              zipfile.ZIP_DEFLATED,
                              compresslevel=clevel
@@ -30,34 +31,35 @@ class Zipit(Utils):
                     path = os.path.join(dirpath, filename)
                     shortfp = path
                     if len(shortfp) > 40:
-                        shortfp = path[-40:]
-                    info = f"%c[%g{perc:3}%%c] %y{count:{num_digits}}%R/"
-                    info += f"%g{total_files}%R: {shortfp}"
+                        shortfp = ".." + path[-38:]
+                    info = f"Zipping: [{perc:3}%] {count:{num_digits}}/"
+                    info += f"{total_files}: {shortfp}"
                     self.print_info(info, clearline=True)
 
                     archive_path = os.path.relpath(path)
                     archive_file.write(path, archive_path)
                     count += 1
 
-            info = f"%c[%g100%%c] %y{total_files}%R/%g{total_files}%R: DONE]"
-            self.print_info(info, clearline=True, nl=True)
+        info = "Zipping: %gDONE%R"
+        self.print_info(info, clearline=True, nl=False)
 
-            path = os.path.join(os.getcwd(), zipfilename)
-            stats = os.stat(path)
-            filesize = self.convert_size(stats.st_size)
-            info = f"%cFilesize%R: %y{filesize}%R"
-            self.myprint(info)
+        path = os.path.join(os.getcwd(), zipfilename)
+        if check:
+            msg = "Checking archive: "
+            self.print_info(msg)
+            with zipfile.ZipFile(zipfilename, 'r') as archive:
+                badfile = zipfile.ZipFile.testzip(archive)
 
-            if check:
-                msg = "Checking %y{zipfilename}%R: "
-                self.print_msg(msg)
-                with zipfile.ZipFile(zipfilename, 'r') as archive:
-                    badfile = zipfile.ZipFile.testzip(archive)
+                if badfile:
+                    print('\033[?25h', end='')
+                    raise zipfile.BadZipFile(
+                            'CRC check failed for {} with file {}'.format(
+                                zipfilename, badfile))
 
-                    if badfile:
-                        raise zipfile.BadZipFile(
-                                'CRC check failed for {} with file {}'.format(
-                                    zipfilename, badfile))
+            msg += "%gOK%R"
+            self.print_info(msg, clearline=True)
 
-                msg += "%gOK%R"
-                self.print_msg(msg, clearline=True)
+        stats = os.stat(path)
+        filesize = self.convert_size(stats.st_size)
+        info = f"Filesize: %g{filesize}%R"
+        self.print_info(info)
