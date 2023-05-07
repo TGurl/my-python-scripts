@@ -167,7 +167,8 @@ class WallhavenDL:
         self.colors = Colors()
         self.ui = UserInput()
         self.apiurl = "https://wallhaven.cc/api/v1/search?"
-        self.apikey = "T52VzHkgEfpJiHTXa9KWujymq3LC2EK0"
+        # self.apikey = "T52VzHkgEfpJiHTXa9KWujymq3LC2EK0"
+        self.apikey = "bkTDRcx01DsAqm0KCuiP1raddn5Xqy87"
         self.download_dir = "/data/pictures/walls/downloads"
         self.categories = "000"
         self.purity = "000"
