@@ -1,2 +1,0 @@
-#!/usr/bin/env bash
-nvim -p heroes tui.py fileio.py convert.py colors.py bigletters.py

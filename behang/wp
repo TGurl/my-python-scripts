@@ -12,10 +12,6 @@ from subprocess import getoutput, Popen, PIPE
 from pathlib import Path
 from time import sleep
 
-#!/usr/bin/env python
-
-import os
-import sys
 import glob
 import toml
 
@@ -407,7 +403,7 @@ class WallPaper:
     def toggle(self, item):
         self.data[item] = True if not self.data[item] else False
         self.save_data()
-        
+
     def toggle_autochange_wallpaper(self):
         subcmd = "enable" if self.data['auto'] else "disable"
         cmd = f"systemctl --user --now {subcmd} wallpaper.timer >> /dev/null 2>&1"

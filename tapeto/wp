@@ -1,0 +1,154 @@
+#!/usr/bin/env python
+import os
+import argparse
+from config import Config
+from wallpaper import Wallpaper
+from utils import Utils
+from time import sleep
+
+
+class Tapeto():
+    def __init__(self, args):
+        self.args = args
+        self.wallpaper = Wallpaper()
+        self.utils = Utils()
+
+    def run(self):
+        self.utils.load_config()
+        if self.args.next is False and self.args.previous is False and \
+            self.args.random is False and self.args.info is False and \
+            self.args.grub is False and self.args.sddm is False and \
+            self.args.auto is False and self.args.toggle is False and \
+            self.args.notify is False and self.args.maincat is False and \
+            self.args.subcat is False:
+            self.utils.show_info()
+
+        if self.args.next:
+            self.wallpaper.next_wallpaper()
+
+        if self.args.previous:
+            self.wallpaper.previous_wallpaper()
+
+        if self.args.random:
+            self.wallpaper.random_wallpaper()
+
+        if self.args.togglerandom:
+            Config.random = False if Config.random else True
+            self.utils.save_config()
+            self.utils.show_info()
+
+        if self.args.info:
+            self.utils.show_info()
+
+        if self.args.maincat:
+            self.wallpaper.toggle_maincat()
+            self.utils.save_config()
+            self.wallpaper.set_wallpaper()
+            self.utils.show_info()
+
+        if self.args.subcat:
+            self.wallpaper.change_subcat()
+            self.utils.save_config()
+            self.wallpaper.set_wallpaper()
+            self.utils.show_info()
+
+        if self.args.grub:
+            Config.grub = not Config.grub
+            self.utils.save_config()
+            self.utils.show_info()
+
+        if self.args.sddm:
+            Config.sddm = not Config.sddm
+            self.utils.save_config()
+            self.utils.show_info()
+
+        if self.args.auto:
+            Config.auto = not Config.auto
+            subcmd = "enable" if Config.auto else "disable"
+            cmd = f"systemctl --user --now {subcmd} wallpaper.timer "
+            cmd += ">> /dev/null 2>&1"
+            os.system(cmd)
+            sleep(2)
+            self.utils.save_config()
+            self.utils.show_info()
+
+        if self.args.toggle:
+            Config.grub = not Config.grub
+            Config.sddm = not Config.sddm
+            self.utils.save_config()
+            self.utils.show_info()
+
+        if self.args.notify:
+            self.utils.send_notification('WP set:', Config.current)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+
+    optional = parser.add_argument_group("optional")
+    required = parser.add_mutually_exclusive_group()
+
+    required.add_argument('-n', '--next',
+                          action='store_true',
+                          default=False,
+                          required=False,
+                          help='Go to next wallpaper')
+    required.add_argument('-p', '--previous',
+                          action='store_true',
+                          default=False,
+                          required=False,
+                          help='Go to previous wallpaper')
+    required.add_argument('-r', '--random',
+                          action='store_true',
+                          default=False,
+                          required=False,
+                          help='Choose a random wallpaper')
+    optional.add_argument('-i', '--info',
+                          action='store_true',
+                          default=False,
+                          required=False,
+                          help='Show wallpaper info')
+    optional.add_argument('-g', '--grub',
+                          action='store_true',
+                          default=False,
+                          required=False,
+                          help='Toggle updating SDDM')
+    optional.add_argument('-s', '--sddm',
+                          action='store_true',
+                          default=False,
+                          required=False,
+                          help='Toggle updating SDDM')
+    optional.add_argument('-a', '--auto',
+                          action='store_true',
+                          default=False,
+                          required=False,
+                          help='Toggle auto change')
+    optional.add_argument('-ta', '--toggle',
+                          action='store_true',
+                          default=False,
+                          required=False,
+                          help='Toggle grub/sddm/auto')
+    optional.add_argument('-no', '--notify',
+                          action='store_true',
+                          default=False,
+                          required=False,
+                          help='Send notifications')
+    optional.add_argument('-mc', '--maincat',
+                          action='store_true',
+                          required=False,
+                          default=False,
+                          help='Toggle main category (N)SFW')
+    optional.add_argument('-sc', '--subcat',
+                          action='store_true',
+                          required=False,
+                          default=False,
+                          help='Change sub category')
+    optional.add_argument('-tr', '--togglerandom',
+                          action='store_true',
+                          required=False,
+                          default=False,
+                          help='Toggle randomize')
+    
+    args = parser.parse_args()
+    app = Tapeto(args)
+    app.run()
