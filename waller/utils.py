@@ -147,17 +147,6 @@ class MyUtils:
             cmd = f'cp {wallpath} {grubpath}'
         self.execute_root_command(cmd)
 
-    # def set_sddm_background(self):
-    #    sddmpath = '/usr/share/sddm/themes/mywall/Backgrounds/mywall.png'
-    #    extension = os.path.splitext(Config.current)[1].lower()
-
-    #    wallpath = self.complete_wallpaper_path()
-    #    if extension == '.jpg':
-    #        cmd = f'convert {wallpath} {sddmpath}'
-    #    else:
-    #        cmd = f'cp {wallpath} {sddmpath}'
-    #    self.execute_root_command(cmd)
-
     def set_wallpaper(self):
         path = self.complete_wallpaper_path()
         match Config.app:
@@ -172,11 +161,8 @@ class MyUtils:
         if Config.grub:
             self.set_grub_background()
 
-        # if Config.sddm:
-        #    self.set_sddm_background()
-
         if Config.notify:
-            cmd = f"notify-send -u normal '{Config.current}'"
+            cmd = f"notify-send -u normal 'New wallpaper:\n{Config.current}'"
             os.system(cmd)
 
     def colorize(self, text):
@@ -264,7 +250,10 @@ class MyUtils:
                 idx = int(response) - 1
                 Config.subcat = folders[idx]
                 wallpapers = self.collect_wallpapers()
-                Config.current = wallpapers[0]
+                if Config.random:
+                    Config.current = random.choice(wallpapers)
+                else:
+                    Config.current = wallpapers[0]
                 self.set_wallpaper()
                 self.save_config()
                 insubmenu = False
@@ -320,8 +309,7 @@ class MyUtils:
             self.myprint(f'%c[%y4%c]%R Auto change wallpaper  : {acol}{Config.auto}%R')
             self.myprint(f'%c[%y5%c]%R Randomize wallpaper    : {rcol}{Config.random}%R')
             self.myprint(f'%c[%y6%c]%R Change grub/SDDM wall  : {gcol}{Config.grub}%R')
-            # self.myprint(f'%c[%y7%c]%R Change sddm background : {scol}{Config.sddm}%R')
-            self.myprint(f'%c[%y7%c]%R Change notification    : {ncol}{Config.notify}%R', nl=True)
+            self.myprint(f'%c[%y7%c]%R Show notification      : {ncol}{Config.notify}%R', nl=True)
 
             self.myprint(f'%c[%yq%c]%R Quit', nl=True)
             prompt = self.colorize('%c>%R ')
