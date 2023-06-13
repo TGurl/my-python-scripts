@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-nvim -p slizer.py game.py utils.py settings.py
+nvim -p slizer.py screens.py puzzle.py settings.py
