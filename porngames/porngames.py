@@ -1,171 +1,96 @@
 #!/usr/bin/env python
-
-import os
+import os, sys
 import fnmatch
-import py7zr
-from time import sleep
+import argparse
+from zipfile import ZipFile, ZipInfo
+from pyfzf.pyfzf import FzfPrompt
 
 
-class Colors:
-    reset = "\033[0m"
-    black = "\033[30m"
-    red = "\033[31m"
-    green = "\033[32m"
-    yellow = "\033[33m"
-    blue = "\033[34m"
-    pink = "\033[35m"
-    cyan = "\033[36m"
-    white = "\033[37m"
+class ZipFileWithPermissions(ZipFile):
+    """ Custom ZipFile class handling file permissions. """
+    def _extract_member(self, member, targetpath, pwd):
+        if not isinstance(member, ZipInfo):
+            member = self.getinfo(member)
+
+        targetpath = super()._extract_member(member, targetpath, pwd)
+
+        attr = member.external_attr >> 16
+        if attr != 0:
+            os.chmod(targetpath, attr)
+        return targetpath
 
 
-class GameMenu:
-    def __init__(self):
-        self.colors = Colors()
-        self.debug = False
-        self.gamepath = os.path.join(
-            '/data',
-            'downloads',
-            'SexGames'
-        )
-        self.destdir = os.path.join(
-            os.path.expanduser('~'),
-            'Games'
-        )
-        self.zips = self.scan_zips()
-        self.zips.sort()
-        self.running = True
-        self.total_games = len(self.zips)
-        self.start_page = 0
-        self.start = 0
-        self.offset = 10  # Items per page
-        self.total_pages = self.ceil(self.total_games / self.offset)
-        self.last_offset = self.total_games % self.offset
+def collect_games():
+    folders = [os.path.join('~', 'Games', 'archives'),
+               os.path.join('~', 'USB', 'sexgames'),
+               os.path.join('~', 'USB', 'sexgames', 'keep')]
+    games = []
+    for folder in folders:
+        path = os.path.expanduser(folder)
+        for file in os.listdir(path):
+            if fnmatch.fnmatch(file, '*.zip'):
+                games.append(os.path.join(path, file))
+    games.sort()
+    return games
 
-    def ceil(self, n):
-        return int(-1 * n // 1 * -1)
+def parse_target(target):
+    if target == 'playing':
+        path = os.path.expanduser(os.path.join('~', 'Games', 'playing'))
+    else:
+        path = os.path.expanduser(os.path.join('~', 'Games', 'todo'))
+    return path
 
-    def floor(self, n):
-        return int(n // 1)
+def install(target):
+    """Install a porn game"""
+    games = collect_games()
+    target = parse_target(target)
+    fzf = FzfPrompt()
+    game = fzf.prompt(games, '--reverse')
+    os.system('clear')
+    print(f"Installing {game[0].split('/')[-1]} to {target}", end='\n\n\n')
 
-    def get_size(self, path):
-        size = os.path.getsize(path)
-        if size < 1024:
-            return f"{size} bytes"
-        elif size < 1024*1024:
-            return f"{round(size/1024, 2)} KiB"
-        elif size < 1024*1024*1024:
-            return f"{round(size/(1024*1024), 2)} MiB"
-        elif size < 1024*1024*1024*1024:
-            return f"{round(size/(1024*1024*1024), 2)} GiB"
+    with ZipFileWithPermissions(game[0]) as archive:
+        INFO = archive.namelist()
+        TOTAL = len(INFO)
+        LEAD = len(str(TOTAL))
+        count = 1
+        name = ""
+        for file in INFO:
+            percent = (count * 100 // TOTAL)
+            name = file if len(file) < 35 else ".." + file[-35:]
+            print('\033[1A', end='\x1b[2K')
+            print(f"Extracting {count:{LEAD}}/{TOTAL} ({percent:3}%) : {name}")
+            archive.extract(file, target)
+            count += 1
+    os.remove(game[0])
 
-    def scan_zips(self):
-        return fnmatch.filter(
-            os.listdir(self.gamepath),
-            "*.7z"
-        )
+def remove():
+    """Remove a porn game"""
+    print('-- removing a game --')
 
-    def extract_zip(self, idx):
-        res = self.colors.reset
-        yel = self.colors.yellow
-        gre = self.colors.green
-        blu = self.colors.blue
-        cya = self.colors.cyan
-
-        zipfile = os.path.join(
-            self.gamepath,
-            self.zips[idx]
-        )
-        name = self.zips[idx]
-        filesize = self.get_size(zipfile)
-
-        self.header("Extracting 7z archive", show_info=False)
-        print(f"{gre}>> {cya}Extracting : {yel}{name}{res}")
-        print(f"{gre}>> {cya}Size       : {blu}{filesize}{res}")
-        print(f"{gre}>> {cya}Please wait...{res}")
-        szfile = py7zr.SevenZipFile(zipfile, mode='r')
-        szfile.extractall(path=self.destdir)
-        szfile.close()
-
-    def header(self, message, show_info=True):
-        if not self.debug:
-            os.system('clear')
-        cya = self.colors.cyan
-        yel = self.colors.yellow
-        res = self.colors.reset
-        msg = f" {message} "
-        line = len(msg) * "─"
-        print(f" {cya}┌{line}┐")
-        print(f" │{yel}{msg}{cya}│")
-        print(f" └{line}┘{res}")
-        if show_info:
-            print()
-            print(f" {cya}Select a game to install{res}")
-            print()
-
-    def show_debug_info(self):
-        os.system('clear')
-        print(45 * "-")
-        print(f"--> total zips: {self.total_games}")
-        print(f"--> total pages: {self.total_pages}")
-        print(f"--> start page: {self.start_page}")
-        print(f"--> count: {self.start}")
-        print(f"--> showing: {self.start} -> {self.start + self.offset}")
-        print(f"--> on last page: {self.last_offset}")
-        print(45 * "-")
-
-    def run(self):
-        cya = self.colors.cyan
-        yel = self.colors.yellow
-        blu = self.colors.blue
-        red = self.colors.red
-        res = self.colors.reset
-
-        while self.running:
-            page = []
-            if self.start < 0:
-                self.start = 0
-
-            show_until = self.start + self.offset
-            if show_until > self.total_games:
-                self.start = self.total_games - self.last_offset
-                show_until = self.start + self.last_offset
-
-            for idx in range(self.start, show_until):
-                page.append(self.zips[idx])
-
-            if self.debug:
-                self.show_debug_info()
-
-            self.header("Simple Game Installer")
-
-            valid = ['q', 'quit', 'n', 'next', 'p', 'prev', 'previous']
-            for idx, name in enumerate(page):
-                num = self.zips.index(name)
-                name = name.replace("_", " ").split('.')[0]
-                print(f"{cya}[{yel}{num+1:3}{cya}]{res} {name}")
-                valid.append(str(num+1))
-
-            print()
-            print(f"({cya}p{res})revious ({cya}n{res})ext ({red}q{res})uit")
-            print()
-            answer = input(f"{blu}>{res} ").lower()
-            if answer not in valid:
-                print(f"{red}>>{res} That is not an option")
-                sleep(2)
-            elif answer in ['q', 'quit']:
-                self.running = False
-            elif answer in ['n', 'next']:
-                self.start += self.offset
-            elif answer in ['p', 'prev', 'previous']:
-                self.start -= self.offset
-            else:
-                self.extract_zip(int(answer) - 1)
-
-        if self.debug:
-            os.system('clear')
-        self.header("Thanks for playing!", show_info=False)
-
+def main(args):
+    """Install/Remove a porn game. Defaults to install"""
+    if args.remove:
+        print('-- removing a game --')
+    else:
+        print(f'-- install a game to {args.target} --')
+        install(args.target)
 
 if __name__ == "__main__":
-    app = GameMenu()
-    app.run()
+    parser = argparse.ArgumentParser(
+            description='Install or remove a porn game.',
+            epilog='If no argument is passed we will install a game to ~/Games/todo')
+    
+    parser.add_argument('-r', '--remove',
+                        action='store_true',
+                        default=False,
+                        required=False,
+                        help='Remove a game')
+    parser.add_argument('-t', '--target',
+                        choices=['playing', 'todo'],
+                        default='todo',
+                        required=False,
+                        help='Where to install the game')
+
+    args = parser.parse_args()
+    main(args)

@@ -11,8 +11,9 @@ class Colors:
     cyan = "\033[36;1m"
     white = "\033[37;1m"
     gray = "\033[37m"
+    italic= "\x1B[3m"
 
-    codes = ['%R', '%B', '%G', '%r', '%g', '%y', '%b', '%p', '%c', '%w']
+    # codes = ['%R', '%B', '%G', '%r', '%g', '%y', '%b', '%p', '%c', '%w']
     colors = [
             ('%R', reset),
             ('%B', black),
@@ -23,5 +24,6 @@ class Colors:
             ('%b', blue),
             ('%p', pink),
             ('%c', cyan),
-            ('%w', white)
+            ('%w', white),
+            ('%i', italic)
     ]

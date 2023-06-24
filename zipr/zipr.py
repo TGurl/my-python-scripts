@@ -2,9 +2,10 @@
 import os, sys
 import zipfile
 import argparse
+import glob
 from shutil import rmtree
 from time import sleep
-from random import choice
+from random import choice, randint
 
 
 class Zip:
@@ -26,7 +27,7 @@ class Zip:
         itstart = "\x1B[3m"
         end = "\x1B[0m"
         white = "\x1B[97m"
-        title = 'Zipr v2.8 - Copyleft 2023 TransGirl'
+        title = 'Zipr v2.87 - Copyleft 2023 TransGirl'
         slogan = "- " + choice(slogans) + " -"
 
         if len(title) > len(slogan):
@@ -94,19 +95,17 @@ class Zip:
                     self.__print_message('That is not a valid response...')
                     sleep(1.5)
                     self.__line_up_and_clear(2)
-                else:
-                    # self.__line_up_and_clear(2)
+                elif res in ['y', '']:
+                    if len(results) > 1:
+                        pronounce = 'them'
                     self.__print_message(f'I have removed {pronounce}.', clearline=True)
-                    print()
+                    for item in results:
+                        os.remove(item)
+                        self.__line_up_and_clear()
                     inloop = False
-
-            if res in ['y', '']:
-                for item in results:
-                    os.remove(item)
-                    self.__line_up_and_clear()
-            else:
-                self.__print_message('Process halted!')
-                sys.exit()
+                else:
+                    self.__print_message('Process halted!')
+                    sys.exit()
 
     def check_if_zipfile_exists(self, zipfilename):
         if os.path.exists(zipfilename):
@@ -126,13 +125,14 @@ class Zip:
 
             if res in ['y', '']:
                 os.remove(zipfilename)
-                self.__print_message('Removed old zip file...')
+                self.__print_message('Removed unnecessary parts from the body...')
             else:
                 self.__print_message('Process halted...')
                 sys.exit()
 
     def ZipFolder(self, folder, nocheck=False):
         self.print_header()
+        self.clear_saves(folder)
 
         check = not nocheck
 
@@ -147,34 +147,50 @@ class Zip:
         total = len(files)
         lead0 = len(str(total))
 
-        self.__print_message('Zipping')
+        self.__print_message('Preparing HRT')
         with zipfile.ZipFile(zip_filename, 'w', compression=zipfile.ZIP_DEFLATED) as zipper:
             for num, file in enumerate(files, start=1):
-                zipper.write(file)
                 percent = (num * 100) // total
 
+                file1 = file
                 if len(file) > 41:
-                    file = file[:14] + '...' + file[-14:]
+                    file1 = file[:14] + '...' + file[-14:]
 
-                self.__print_message(f"Zipping [{percent:3}%] {num:0{lead0}}/{total:0{lead0}} {file}",
+                self.__print_message(f"Injecting HRT [{percent:3}%] {num:{lead0}}/{total:{lead0}} {file1}",
                                      clearline=True)
+                zipper.write(file)
 
-            self.__print_message('Zipping done', clearline=True)
+            self.__print_message('HRT treatment done', clearline=True)
 
             if check:
-                self.__print_message('Checking zipfile. This can take a while...')
+                self.__print_message('Checking body. This can take a while...')
                 try:
                     result = zipper.testzip()
                     if result is not None:
-                        self.__print_message("Very bad file in zip: %s" % result)
+                        self.__print_message("Very bad hormone in zip: %s" % result)
                         sys.exit(1)
                 except Exception as ex:
                     self.__print_message("Exception: %s" % ex)
 
-                self.__print_message('Zipfile is OK', clearline=True)
+                self.__print_message('HRT went OK', clearline=True)
 
         size = self.__convert_bytes(os.stat(zip_filename).st_size)
         return size
+
+    def clear_saves(self, folder):
+        pattern = os.path.join(folder, '**', 'saves')
+        saves = glob.glob(pattern)
+        if os.path.exists(os.path.expanduser('~/.renpy')):
+            saves.append('~/.renpy')
+
+        if len(saves):
+            self.__print_message('Preparing body for HRT...')
+            sleep(randint(1, 3))
+            for save in saves:
+                rmtree(os.path.expanduser(save))
+            self.__print_message('Body is ready for HRT.', clearline=True)
+        else:
+            self.__print_message('Body didn\'t need preparing...')
 
     def move_file(self, start, destination, size="Fuck me!", keep=False):
         start = start + '.zip'
@@ -184,7 +200,7 @@ class Zip:
         destination = destinations[targets.index(destination)]
 
         # --- moving file to destination
-        self.__print_message("Moving {start} ({size}) to {destination}")
+        self.__print_message("Transitioning {start} ({size}) to {destination}")
 
         source_size = os.stat(start).st_size
         target_fn = os.path.expanduser(os.path.join(destination, start))
@@ -194,7 +210,7 @@ class Zip:
         source = open(start, 'rb')
         target = open(target_fn, 'wb')
 
-        self.__print_message(f"Moving {start} ({size}) to {destination} [{percent:3}%]", clearline=True)
+        self.__print_message(f"Transitioning {start} ({size}) to {destination} [{percent:3}%]", clearline=True)
         while True:
             chunk = source.read(32768)
             if not chunk:
@@ -202,7 +218,7 @@ class Zip:
             target.write(chunk)
             copied += len(chunk)
             percent = int(copied * 100 / source_size)
-            self.__print_message(f"Moving {start} ({size}) to {destination} [{percent:3}%]", clearline=True)
+            self.__print_message(f"Transitioning {start} ({size}) to {destination} [{percent:3}%]", clearline=True)
 
         target.close()
         source.close()
@@ -210,7 +226,7 @@ class Zip:
         # --- removing source folder
         os.remove(start)
 
-        self.__print_message(f"{start} ({size}) moved to {destination}", clearline=True)
+        self.__print_message(f"{start} ({size}) transitioned to {destination}", clearline=True)
 
     def test(self, folder):
         print(self.__gather_files(folder))
@@ -230,13 +246,18 @@ def main(args):
     size = zipr.ZipFolder(args.folder, nocheck=args.nocheck)
     zipr.move_file(args.folder, args.destination.lower(), size=size, keep=args.keep)
 
+    cup = choice(['D', 'DD', 'DDD', 'E', 'F'])
+    wait = randint(1, 4) 
+
     if not args.keep:
-        print("> Removing the source folder...")
+        print("> Removing the penis from the body...")
         rmtree(args.folder)
         print('\033[1A', end='\x1b[2K')
-        print("> Removed source folder.")
+        print("> Growing boobs...")
+        sleep(wait)
+        print(f"> Penis removed. You are now a woman with {cup} size boobs...")
     else:
-        print("> Kept the soure folder...")
+        print("> Kept the dick, you're now a 'Chick with a Dick' and {cup} size boobs...")
 
     print("> All done...")
 

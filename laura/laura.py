@@ -1,28 +1,15 @@
 #!/usr/bin/env python
-from settings import *
-from engine import Girl
+from colors import Colors
+from tui import TUI
 
-
-# -----------------------------------------
-# --- Class MainGame
-# -----------------------------------------
-
-class MainGame:
-    
-    # -----------------------------------------
-    # The main game loop
-    # -----------------------------------------
-
+class GameLoop(TUI):
     def __init__(self):
-        self.girl = Girl()
+        super().__init__()
+
 
     def run(self):
-        print(self.girl.get_age())
-        print(self.girl.get_sexy())
+        self.draw_header()
 
-# -----------------------------------------
-# --- An to make it all work...
-# -----------------------------------------
 if __name__ == "__main__":
-    app = MainGame()
+    app = GameLoop()
     app.run()
