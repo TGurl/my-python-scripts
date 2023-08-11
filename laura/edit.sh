@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-nvim -p laura.py engine.py screens.py settings.py
+nvim -p laura.py screens.py tui.py engine.py settings.py colors.py

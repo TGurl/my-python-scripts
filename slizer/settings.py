@@ -1,8 +1,0 @@
-import os
-
-WIDTH, HEIGHT = 1280, 720
-
-BLUE = (106, 159, 181)
-WHITE = (255, 255, 255)
-
-

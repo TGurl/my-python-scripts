@@ -8,7 +8,9 @@ class StoryTeller:
         self.utils = Utils()
 
     def run(self):
-        config_path = os.path.expanduser(os.path.join('~', '.bin', 'st.pickle'))
+        config_path = os.path.expanduser(
+                os.path.join('~', '.bin', 'st.pickle')
+                )
         if os.path.exists(config_path):
             self.utils.load_config()
         self.utils.menu()

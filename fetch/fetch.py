@@ -112,18 +112,25 @@ def get_wallpaper():
 def get_timeleft():
     """Get the time until next wallpaper"""
     timer = os.popen("systemctl --user list-timers --all").read().split()
+
     if 'wallpaper.timer' not in timer:
         return "disabled"
-
-    if 'CET' in timer:
-        idx = timer.index('CET')
     else:
-        idx = timer.index('CEST')
+        timer = os.popen("systemctl --user status wallpaper.timer").read().split()
+
+
+    #if 'CET' in timer:
+    #    idx = timer.index('CET')
+    #else:
+    #    idx = timer.index('CEST')
+
+    idx = timer.index('left')
     hours = ""
-    mins = timer[idx + 1]
-    if 'h' in mins:
-        hours = mins
-        mins = timer[idx + 2]
+    mins = timer[idx - 1]
+
+    if 'm' in mins:
+        hours = timer[idx - 2]
+        mins = timer[idx - 1]
     if mins == "left":
         mins = ""
     if hours != "":

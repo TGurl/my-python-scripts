@@ -1,0 +1,249 @@
+#!/usr/bin/env python3
+import os, sys
+import glob
+import zipfile
+
+from rich.console import Console
+from rich.panel import Panel
+from rich.progress import track
+
+from shutil import rmtree
+from time import sleep
+
+
+
+class Zipr:
+    def __init__(self):
+        self.console = Console()
+
+    # ---------------------------------------------------
+    # --- Helper functions
+    # ---------------------------------------------------
+    def __move_up_and_clear(self, num=1):
+        for _ in range(num):
+            print('\033[1A', end='\x1b[2K')
+
+    def __print_error(self, text):
+        self.console.print(f'[bold red] ![/bold red] {text}')
+    
+    def __print_warning(self, text):
+        self.console.print(f'[orange1] >[/orange1] {text}')
+
+    def __print_message(self, text):
+        self.console.print(f'[green3] >[/green3] {text}')
+
+    def __print_step(self, text):
+        self.console.print(f"[orange1] >[/orange1] {text}")
+    
+    def __print_substep(self, text):
+        tab = 3 * ' '
+        self.console.print(f"{tab}[plum3] >[/plum3] {text}")
+
+    def __print_header(self):
+        os.system('clear')
+        prog = '[bold green3]Zipr v2.90[/bold green3]'
+        copr = '[deep_sky_blue1]Copyleft 2023[/deep_sky_blue1] [plum1]TransGirl[/plum1]'
+        panel = Panel.fit(f'{prog} - {copr}')
+        self.console.print(panel, end='\n\n')
+
+    def __determine_destination(self, target):
+        match target:
+            case 'usb': destination = os.path.join('~', 'USB', 'sexgames')
+            case 'keep': destination = os.path.join('~', 'USB', 'sexgames', 'keep')
+            case _: destination = os.path.join('~', 'Games', 'archives')
+        return os.path.expanduser(destination)
+
+    # ---------------------------------------------------
+    # --- Check if the folder even exists
+    # ---------------------------------------------------
+    def check_if_folder_exists(self, folder):
+        if not os.path.exists(folder):
+            self.__print_error('No folder found by that name')
+            sys.exit(1)
+
+    # ---------------------------------------------------
+    # --- Check if the archive to be created already exists
+    # ---------------------------------------------------
+    def check_if_zipfile_exists(self, folder):
+        zipfile_name = folder + '.zip'
+
+        if os.path.exists(zipfile_name):
+            self.__print_error(f'{zipfile_name} found in current folder!')
+            sys.exit(1)
+
+    # ---------------------------------------------------
+    # --- Check if the archive already exists
+    # ---------------------------------------------------
+    def check_if_already_in_archives(self, folder):
+        self.__print_step('Checking if game has been archived')
+
+        folder_str = f'[grey50 italic]{folder}[/grey50 italic]'
+
+        zipfile_name = folder + '.zip'
+        results = []
+        destinations = [os.path.join('~', 'Games', 'archives'),
+                        os.path.join('~', 'USB', 'sexgames'),
+                        os.path.join('~', 'USB', 'sexgames', 'keep')]
+
+        for destination in destinations:
+            target_fn = os.path.expanduser(os.path.join(destination, zipfile_name))
+            if os.path.exists(target_fn):
+                results.append(destination)
+
+        if len(results) > 0:
+            for destination in results:
+                dest_str = f'[grey50 italic]{destination}[/grey50 italic]'
+                self.__print_error(f'{zipfile_name} already exists in {dest_str}')
+            sys.exit(1)
+
+        sleep(0.6)
+        self.__move_up_and_clear()
+        self.__print_message(f'No game found by name: {folder_str}')
+
+    # ---------------------------------------------------
+    # --- Clearing save files
+    # ---------------------------------------------------
+    def clear_save_files(self, folder):
+        self.__print_step('Clearing save files')
+        saves = glob.glob(os.path.join(folder, '**', 'saves'))
+        for item in saves:
+            rmtree(item)
+
+        sleep(0.5)
+        self.__move_up_and_clear()
+        self.__print_message('Save files cleared')
+
+    # ---------------------------------------------------
+    # --- Collecting files to add to archive
+    # ---------------------------------------------------
+    def collect_files(self, folder):
+        self.__print_step('Collecting all the files to zip')
+
+        files = glob.glob(os.path.join(folder, '**'), recursive=True)
+
+        sleep(0.5)
+        self.__move_up_and_clear()
+        self.__print_message('All files collected')
+        return files
+
+    # ---------------------------------------------------
+    # --- Zip the files
+    # ---------------------------------------------------
+    def create_zipfile(self, folder, files):
+        self.__print_step('Creating zip file')
+        zipfile_name = folder + '.zip'
+
+        if os.path.exists(zipfile_name):
+            self.__print_error(f'{zipfile_name} found in current folder!')
+            sys.exit(1)
+
+        zf = zipfile.ZipFile(zipfile_name, mode='w', compression=zipfile.ZIP_DEFLATED)
+        try:
+            for file in track(files, description='[plum3]   >[/plum3] Zipping:'):
+                zf.write(file)
+        finally:
+            zf.close()
+        
+        self.__move_up_and_clear(num=2)
+        self.__print_message('Zipfile created')
+
+    # ---------------------------------------------------
+    # --- Check the newly created zipfile
+    # ---------------------------------------------------
+    def check_zipfile(self, folder):
+        self.__print_step('Checking zip file for errors')
+
+        zipfile_name = folder + '.zip'
+        zf = zipfile.ZipFile(zipfile_name, mode='r')
+        try:
+            result = zf.testzip()
+        finally:
+            zf.close()
+
+        self.__move_up_and_clear()
+        if result is None:
+            self.__print_message(f'Zipfile [green3]OK[/green3]')
+        else:
+            self.__print_error(f'Zipfile contains bad files!')
+            sys.exit(1)
+
+    # ---------------------------------------------------
+    # --- Move the archive to it's final destination
+    # ---------------------------------------------------
+    def move_zipfile_to_destination(self, folder):
+        zipfile_name = folder + '.zip'
+        target_fn = os.path.join(self.destination, zipfile_name)
+        dest_str = f'[grey50 italic]{self.destination}[/grey50 italic]'
+        # source_size = os.stat(zipfile_name).st_size
+        chunks = []
+
+        source = open(zipfile_name, 'rb')
+        while True:
+            chunk = source.read(32768)
+            if not chunk:
+                break
+            chunks.append(chunk)
+        source.close()
+
+        target = open(target_fn, 'wb')
+        for chunk in track(chunks, description='[plum3]   >[/plum3] Moving:'):
+            target.write(chunk)
+
+        target.close()
+
+        self.__move_up_and_clear(num=2)
+        self.__print_message(f'Done moving {zipfile_name} to {dest_str}')
+
+    def delete_source_folder(self, folder):
+        self.__print_step('Deleting source folder')
+
+        rmtree(folder)
+
+        self.__move_up_and_clear()
+        self.__print_message('Source folder removed')
+
+    def execute(self, folder, destination, keep=False, keepsaves=False, nocheck=False):
+
+        # --- 0. Clear the terminal and start the Process
+        self.__print_header()
+        self.__print_message(f'Archiving [grey50 italic]{folder}[/grey50 italic]')
+
+        # --- 0a. Determine destination folder
+        self.destination = self.__determine_destination(destination)
+
+        # --- 0b. Checking some things
+        self.check_if_folder_exists(folder)
+        self.check_if_zipfile_exists(folder)
+        self.check_if_already_in_archives(folder)
+
+        # --- 1. Clear the save files when enabled
+        if not keepsaves:
+            self.clear_save_files(folder)
+        else:
+            self.__print_warning('Keeping save files')
+
+        # --- 2. Collect all the files in the folder
+        files = self.collect_files(folder)
+        
+        # --- 3. Create the zip file
+        self.create_zipfile(folder, files)
+
+        # --- 4. Check the zip file when enabled
+        if not nocheck:
+            self.check_zipfile(folder)
+        else:
+            self.__print_warning('Not checking the zip file for errors')
+
+        # --- 5. Move the zip file to it's destination
+        self.move_zipfile_to_destination(folder)
+
+        # --- 6. Removing source folder when enabled
+        if not keep:
+            self.delete_source_folder(folder)
+        else:
+            self.__print_warning('Keeping source folder')
+
+        # --- 7. Remove the newly created zipfile and exit
+        os.remove(folder + '.zip')
+        self.__print_message('Done!')
+        sys.exit()

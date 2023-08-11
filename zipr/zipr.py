@@ -1,285 +1,83 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+"""Zipr - A simple script to archive porngames"""
+
 import os, sys
-import zipfile
+from utils import Utils
 import argparse
-import glob
-from shutil import rmtree
-from time import sleep
-from random import choice, randint
 
 
-class Zip:
+class Main(Utils):
     def __init__(self):
-        pass
+        super().__init__()
 
-    def __line_up_and_clear(self, repeat=1):
-        for _ in range(0, repeat):
-            print('\033[1A', end='\x1b[2K')
-            
-    def print_header(self):
-        slogans = ['I want (.)(.)!', 'Please rape me!', 'Fill me up with your cum',
-                   'TransGirl loves Big Black Cocks', 'TransGirl wants to suck a cock!',
-                   'TransGirl is the Queen of Spades', 'Stretch my as with that Big Black cock!',
-                   'Oh yes, cum all over my body!', 'I love gangbangs', 'TransGirl wants to be a slut!',
-                   'TransGirl wants to be a whore!', 'I dream of being an escort!',
-                   'I\'m searching for a Sugar Daddy!']
+    def run(self, args):
+        zipfile = args.folder
+        if '.zip' not in zipfile:
+            zipfile = args.folder + '.zip'
 
-        itstart = "\x1B[3m"
-        end = "\x1B[0m"
-        white = "\x1B[97m"
-        title = 'Zipr v2.87 - Copyleft 2023 TransGirl'
-        slogan = "- " + choice(slogans) + " -"
+        self.show_title()
 
-        if len(title) > len(slogan):
-            spaces = ((len(title) - len(slogan)) // 2) * ' '
-            slogan = f"{spaces}{slogan}"
-        else:
-            spaces = ((len(slogan) - len(title)) // 2) * " "
-            title = f"{spaces}{title}"
+        # 1. Parse the destination given
+        match args.dest.lower():
+            case 'usb': destination = os.path.join('~', 'USB', 'sexgames')
+            case 'keep': destination = os.path.join('~', 'USB', 'sexgames', 'keep')
+            case 'archives': destination = os.path.join('~', 'Games', 'archives')
+            case _:
+                self.print_error('An unknown destination given, exiting...')
+                sys.exit(1)
 
-        os.system('clear')
-        print(white + title + end)
-        print(itstart + slogan + end, end='\n\n')
+        # 2. Check if an archive with that name already exists in temp directory
+        self.check_temp_directory(zipfile)
 
-    def __print_message(self, text, clearline=False):
-        if clearline:
-            self.__line_up_and_clear()
-        print(f"> {text}")
+        # 3. Check if an archive with that name has already been archived
+        self.check_archives_for_zipfile(zipfile, args.yes)
 
-    def __gather_files(self, folder):
-        file_paths = []
-        for root, _, files in os.walk(folder):
-            for filename in files:
-                filepath = os.path.join(root, filename)
-                file_paths.append(filepath)
+        # 4. Clear the save files from the game
+        self.clear_saves(zipfile)
 
-        # file_paths.sort()
-        return file_paths
+        # 5. Create the archive
+        self.create_zip(zipfile)
 
-    def __convert_bytes(self, size):
-        # 2**10 = 1024
-        power = 2**10
-        n = 0
-        power_labels = {0 : '', 1: 'K', 2: 'M', 3: 'G', 4: 'T'}
-        while size > power:
-            size /= power
-            n += 1
-        size = round(size, 2)
-        return f"{size} {power_labels[n]+'b'}"
+        # 6. Check the archive for errors
+        self.check_zip_archive(zipfile)
 
-    def check_if_folder_in_archives(self, zipfilename):
-        total = 0
-        targets = ['~/Games/archives', '~/USB/sexgames', '~/USB/sexgames/keep']
-        results = []
-        res = 'TransGirl wants to be raped by big black cocks!'
-        for target in targets:
-            path = os.path.join(target, zipfilename)
-            if os.path.exists(os.path.expanduser(path)):
-                total += 1
-                results.append(os.path.expanduser(path))
+        # 7. Move the archive to destination
+        self.move_archive(zipfile, destination, args.keep, args.nosync)
 
-        if total:
-            if total > 1:
-                times = 'times'
-                pronounce = 'them'
-            else:
-                times = 'time'
-                pronounce = 'her'
+        # 8. All done.
+        self.print_message('All done.')
 
-            self.__print_message(f"{zipfilename} found {total} {times} in archives.")
-            
-            inloop = True
-            while inloop:
-                res = input(f"> Shall I remove {pronounce}? (Y/n) ").lower()
-                if res not in ['y', 'n', '']:
-                    self.__print_message('That is not a valid response...')
-                    sleep(1.5)
-                    self.__line_up_and_clear(2)
-                elif res in ['y', '']:
-                    if len(results) > 1:
-                        pronounce = 'them'
-                    self.__print_message(f'I have removed {pronounce}.', clearline=True)
-                    for item in results:
-                        os.remove(item)
-                        self.__line_up_and_clear()
-                    inloop = False
-                else:
-                    self.__print_message('Process halted!')
-                    sys.exit()
 
-    def check_if_zipfile_exists(self, zipfilename):
-        if os.path.exists(zipfilename):
-            self.__print_message('Warning! A zip file by that name already exists in the current folder!')
-
-            res = 'TransGirl wants her fuckhole to be filled with cum!'
-            inloop = True
-            while inloop:
-                res = input('> Shall I remove her? (Y/n) ').lower()
-                if res not in ['y', 'n', '']:
-                    self.__print_message('That is not a valid response...')
-                    sleep(1.5)
-                    self.__line_up_and_clear(2)
-                else:
-                    self.__line_up_and_clear(2)
-                    inloop = False
-
-            if res in ['y', '']:
-                os.remove(zipfilename)
-                self.__print_message('Removed unnecessary parts from the body...')
-            else:
-                self.__print_message('Process halted...')
-                sys.exit()
-
-    def ZipFolder(self, folder, nocheck=False):
-        self.print_header()
-        self.clear_saves(folder)
-
-        check = not nocheck
-
-        zip_filename = folder
-        if '.zip' not in zip_filename:
-            zip_filename = folder + '.zip'
-
-        self.check_if_zipfile_exists(zip_filename)
-        self.check_if_folder_in_archives(zip_filename)
-
-        files = self.__gather_files(folder)
-        total = len(files)
-        lead0 = len(str(total))
-
-        self.__print_message('Preparing HRT')
-        with zipfile.ZipFile(zip_filename, 'w', compression=zipfile.ZIP_DEFLATED) as zipper:
-            for num, file in enumerate(files, start=1):
-                percent = (num * 100) // total
-
-                file1 = file
-                if len(file) > 41:
-                    file1 = file[:14] + '...' + file[-14:]
-
-                self.__print_message(f"Injecting HRT [{percent:3}%] {num:{lead0}}/{total:{lead0}} {file1}",
-                                     clearline=True)
-                zipper.write(file)
-
-            self.__print_message('HRT treatment done', clearline=True)
-
-            if check:
-                self.__print_message('Checking body. This can take a while...')
-                try:
-                    result = zipper.testzip()
-                    if result is not None:
-                        self.__print_message("Very bad hormone in zip: %s" % result)
-                        sys.exit(1)
-                except Exception as ex:
-                    self.__print_message("Exception: %s" % ex)
-
-                self.__print_message('HRT went OK', clearline=True)
-
-        size = self.__convert_bytes(os.stat(zip_filename).st_size)
-        return size
-
-    def clear_saves(self, folder):
-        pattern = os.path.join(folder, '**', 'saves')
-        saves = glob.glob(pattern)
-        if os.path.exists(os.path.expanduser('~/.renpy')):
-            saves.append('~/.renpy')
-
-        if len(saves):
-            self.__print_message('Preparing body for HRT...')
-            sleep(randint(1, 3))
-            for save in saves:
-                rmtree(os.path.expanduser(save))
-            self.__print_message('Body is ready for HRT.', clearline=True)
-        else:
-            self.__print_message('Body didn\'t need preparing...')
-
-    def move_file(self, start, destination, size="Fuck me!", keep=False):
-        start = start + '.zip'
-        # --- parsing destination
-        targets = ['archives', 'usb', 'keep']
-        destinations = ['~/Games/archives', '~/USB/sexgames', '~/USB/sexgames/keep']
-        destination = destinations[targets.index(destination)]
-
-        # --- moving file to destination
-        self.__print_message("Transitioning {start} ({size}) to {destination}")
-
-        source_size = os.stat(start).st_size
-        target_fn = os.path.expanduser(os.path.join(destination, start))
-        copied = 0
-        percent = 0
-
-        source = open(start, 'rb')
-        target = open(target_fn, 'wb')
-
-        self.__print_message(f"Transitioning {start} ({size}) to {destination} [{percent:3}%]", clearline=True)
-        while True:
-            chunk = source.read(32768)
-            if not chunk:
-                break
-            target.write(chunk)
-            copied += len(chunk)
-            percent = int(copied * 100 / source_size)
-            self.__print_message(f"Transitioning {start} ({size}) to {destination} [{percent:3}%]", clearline=True)
-
-        target.close()
-        source.close()
-
-        # --- removing source folder
-        os.remove(start)
-
-        self.__print_message(f"{start} ({size}) transitioned to {destination}", clearline=True)
-
-    def test(self, folder):
-        print(self.__gather_files(folder))
-
-def main(args):
-    zipr = Zip()
-    if args.destination.lower() not in ['archives', 'keep', 'usb']:
-        zipr.print_header()
-        print('An invalid destination passed. Please try again...')
-        sys.exit()
-
-    if not os.path.exists(args.folder):
-        zipr.print_header()
-        print("That folder doesn't seem to exist. Please try again...")
-        sys.exit()
-
-    size = zipr.ZipFolder(args.folder, nocheck=args.nocheck)
-    zipr.move_file(args.folder, args.destination.lower(), size=size, keep=args.keep)
-
-    cup = choice(['D', 'DD', 'DDD', 'E', 'F'])
-    wait = randint(1, 4) 
-
-    if not args.keep:
-        print("> Removing the penis from the body...")
-        rmtree(args.folder)
-        print('\033[1A', end='\x1b[2K')
-        print("> Growing boobs...")
-        sleep(wait)
-        print(f"> Penis removed. You are now a woman with {cup} size boobs...")
-    else:
-        print("> Kept the dick, you're now a 'Chick with a Dick' and {cup} size boobs...")
-
-    print("> All done...")
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('folder', help='Folder to zip')
-    parser.add_argument('-d', '--destination',
+    parser.add_argument('folder',
+                        help='folder to zip')
+
+    parser.add_argument('-d', '--dest',
                         type=str,
+                        required=True,
                         default='archives',
-                        required=False,
-                        help='Where to put the zipfile')
+                        help='where to store the archive'
+                        )
+
     parser.add_argument('-k', '--keep',
                         action='store_true',
-                        default=False,
                         required=False,
-                        help='Keep the source folder')
-    parser.add_argument('-nc', '--nocheck',
-                        action='store_true',
                         default=False,
-                        required=False,
-                        help='Disable check zipfile')
+                        help='keep the source folder')
 
-    args = parser.parse_args()
-    main(args)
+    parser.add_argument('-y', '--yes',
+                        action='store_true',
+                        required=False,
+                        default=False,
+                        help='Assume yes for any questions')
+
+    parser.add_argument('-ns', '--nosync',
+                        action='store_true',
+                        required=False,
+                        default=False,
+                        help='Do not sync after moving to usb')
+
+    app = Main()
+    app.run(parser.parse_args())

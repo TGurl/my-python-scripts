@@ -9,7 +9,7 @@ import glob
 
 class Utils:
     def __init__(self):
-        pass
+        self.nvim = False
 
     def colorize(self, text):
         for code in Colors.colors:
@@ -29,20 +29,25 @@ class Utils:
                 'laststory': Config.laststory,
                 'lastquote': Config.lastquote
                 }
-        config_path = os.path.expanduser(os.path.join('~', '.bin', 'st.pickle'))
+        config_path = os.path.expanduser(
+                os.path.join('~', '.bin', 'st.pickle')
+                )
         pickle_out = open(config_path, 'wb')
         pickle.dump(data, pickle_out)
         pickle_out.close()
 
     def load_config(self):
-        config_path = os.path.expanduser(os.path.join('~', '.bin', 'st.pickle'))
+        config_path = os.path.expanduser(
+                os.path.join('~', '.bin', 'st.pickle')
+                )
         pickle_in = open(config_path, 'rb')
         data = pickle.load(pickle_in)
         pickle_in.close()
-        
+
         Config.storydir = data['storydir']
         Config.laststory = data['laststory']
         Config.lastquote = data['lastquote']
+
 
     def myprint(self, text, italic=False, nl=False):
         newline = '\n\n' if nl else '\n'
@@ -65,7 +70,7 @@ class Utils:
         Config.lastquote = idx
         self.save_config()
         return quote
-    
+
     def print_header(self):
         os.system('clear')
         quote = self.select_quote()
@@ -98,7 +103,9 @@ class Utils:
         return stories
 
     def open_files(self, story, notes):
-        os.system(f"vim -p + {story} + {notes}")
+        cmd = 'nvim' if self.nvim else 'vim'
+        complete_cmd = f"{cmd} -p {story} {notes}"
+        os.system(complete_cmd)
 
     def open_story(self, story_id):
         stories = self.collect_stories()
@@ -107,7 +114,7 @@ class Utils:
         Config.laststory = story
         self.save_config()
         self.open_files(story, notes)
-    
+
     def continue_last_story(self):
         notes = Config.laststory.replace('.md', '_notes.md')
         self.open_files(Config.laststory, notes)
@@ -121,12 +128,14 @@ class Utils:
             self.myprint('%cWhich story do you want to delete?%R', nl=True)
             for num, story in enumerate(stories, start=1):
                 valid.append(str(num))
-                story_name = story.split('/')[-1].replace('_', ' ').replace('.md', '').title()
+                story_name = story.split('/')[-1].replace('_', ' ')
+                story_name = story_name.replace('.md', '').title()
                 if num < len(stories):
                     self.myprint(f"%c[%y{num}%c]%R {story_name}")
                 else:
                     self.myprint(f"%c[%y{num}%c]%R {story_name}", nl=True)
-            self.myprint('Leave empty to return to main menu', italic=True, nl=True)
+            self.myprint('Leave empty to return to main menu',
+                         italic=True, nl=True)
             prompt = self.colorize('%c»%R ')
             response = input(prompt).lower()
             if response == '':
@@ -142,8 +151,10 @@ class Utils:
             if filepath == Config.laststory:
                 Config.laststory = ''
             notepath = filepath.replace('.md', '_notes.md')
-            os.remove(filepath)
-            os.remove(notepath)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            if os.path.exists(notepath):
+                os.remove(notepath)
             stories = self.collect_stories()
 
     def create_a_new_story(self):
@@ -153,18 +164,21 @@ class Utils:
         while True:
             self.print_header()
             self.myprint('%cWhat title do you want to give this story?%R')
-            self.myprint('Leave empty to return to main menu', italic=True, nl=True)
+            self.myprint('Leave empty to return to main menu',
+                         italic=True, nl=True)
             prompt = self.colorize('%c»%R ')
             title = input(prompt).lower()
             if title == '':
                 exit_menu = True
                 break
             else:
-                filepath = os.path.join(Config.storydir, title.replace(' ', '_') + '.md')
+                filepath = os.path.join(
+                        Config.storydir,
+                        title.replace(' ', '_') + '.md')
                 notepath = filepath.replace('.md', '_notes.md')
 
                 if os.path.exists(filepath):
-                    self.print_error('There already is a story with that title...')
+                    self.print_error('There already is a story by that title!')
                 else:
                     break
 
@@ -191,7 +205,6 @@ class Utils:
             case 'd': self.delete_a_story()
             case _: self.open_story(int(choice))
 
-
     def menu(self):
         last_story_name = ''
         while True:
@@ -203,6 +216,7 @@ class Utils:
             stories = self.collect_stories()
 
             if len(stories) == 0:
+                Config.laststory = ''
                 self.myprint('%gYou didn\'t write any stories yet...%R', italic=True, nl=True)
             for count, story in enumerate(stories, start=1):
                 valid.append(str(count))

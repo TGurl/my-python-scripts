@@ -1,0 +1,41 @@
+#!/usr/bin/env python
+from utils import Zipr
+import argparse
+
+
+def main(args):
+    zipr = Zipr()
+    zipr.execute(args.folder,
+                 args.destination,
+                 args.keep,
+                 args.keepsaves,
+                 args.nocheck)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(prog='zipr')
+
+    parser.add_argument('folder',
+                        help='Folder to zip')
+    parser.add_argument('-d', '--destination',
+                        choices={'archives', 'usb', 'keep'},
+                        default='archives',
+                        required=False,
+                        help='Final destination for the zipped game')
+    parser.add_argument('-k', '--keep',
+                        action='store_true',
+                        required=False,
+                        default=False,
+                        help='Keep the source folder after zipping')
+    parser.add_argument('-ks', '--keepsaves',
+                        action='store_true',
+                        required=False,
+                        default=False,
+                        help='Keep the game saves')
+    parser.add_argument('-nc', '--nocheck',
+                        action='store_true',
+                        default=False,
+                        required=False,
+                        help='Do not perferm a check of the zipfile')
+
+    main(parser.parse_args())
