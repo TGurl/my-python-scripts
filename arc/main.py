@@ -79,7 +79,7 @@ class Archiver:
         self.myprint(f"{prompt} {text}")
 
     def info(self, text):
-        spaces = 4 * " "
+        spaces = 3 * " "
         self.myprint(f"{spaces}%b└>%R {text}")
 
     def banner(self):
