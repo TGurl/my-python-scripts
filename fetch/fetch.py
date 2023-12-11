@@ -84,14 +84,20 @@ def get_uptime():
 # -----------------------------------------------------------
 
 def get_memory_usage():
-    total_memory, used_memory, _ = map(
-            int, os.popen('free -t -m').readlines()[-1].split()[1:])
+    #total_memory, used_memory, _ = map(
+    #        int, os.popen('free -t -m').readlines()[-1].split()[1:])
+
+    total_memory, used_memory, _, _, _, _ = map(
+            int, os.popen('free -t -m').readlines()[1].split()[1:])
+
     return (total_memory, used_memory)
 
-def get_cpu_info():
+def get_cpu_info() -> tuple:
     load = psutil.getloadavg()
     cpu_count = os.cpu_count()
-    cpu_usage = round((load[2] * 100) / cpu_count)
+    load2 = round(load[2] * 100)
+    cpu_usage = round(load2 / cpu_count)
+    # cpu_usage2 = load2 / cpu_count
     return (cpu_usage, cpu_count)
 
 # -----------------------------------------------------------
@@ -125,20 +131,17 @@ def get_timeleft():
     #    idx = timer.index('CEST')
 
     idx = timer.index('left')
-    hours = ""
     mins = timer[idx - 1]
+    hours = timer[idx - 2]
 
-    if 'm' in mins:
-        hours = timer[idx - 2]
-        mins = timer[idx - 1]
-    if mins == "left":
-        mins = ""
-    if hours != "":
-        time_left = f"{hours} {mins}"
-    else:
-        time_left = f"{mins}"
-    return time_left
+    if hours == 'CEST;' or hours == 'CET;':
+        hours = ''
+    timeleft = f"{hours}"
+    if hours != '':
+        timeleft += " "
+    timeleft += f"{mins}"
 
+    return timeleft
 
 # -----------------------------------------------------------
 # Collect all the information

@@ -1,246 +1,124 @@
-from settings import Config
-from colors import Colors
-from random import choice
-from time import sleep
-import pickle
 import os
-import glob
+import pickle
+
+from settings import DISCLAIMER
 
 
 class Utils:
     def __init__(self):
-        self.nvim = False
+        self.config_file = os.path.expanduser(
+            os.path.join("~", ".local", "share", "storyteller", "st.cfg")
+        )
+        self.story_dir = os.path.expanduser(os.path.join("~", "stories"))
+        self.stories = []
+        self.last_story = ""
+        self.load_settings()
 
-    def colorize(self, text):
-        for code in Colors.colors:
-            text = text.replace(code[0], code[1])
-        return text
+    def load_settings(self):
+        if not os.path.exists(self.config_file):
+            self.last_story = ""
+        else:
+            pickle_in = open(self.config_file, "rb")
+            data = pickle.load(pickle_in)
+            pickle_in.close()
+            self.last_story = data["last_story"]
 
-    def decolorize(self, text):
-        for code in Colors.colors:
-            text = text.replace(code[0], '')
-        return text
-
-    def save_config(self):
-        data = {
-                'title': Config.title,
-                'version': Config.version,
-                'storydir': Config.storydir,
-                'laststory': Config.laststory,
-                'lastquote': Config.lastquote
-                }
-        config_path = os.path.expanduser(
-                os.path.join('~', '.bin', 'st.pickle')
-                )
-        pickle_out = open(config_path, 'wb')
+    def save_settings(self):
+        data = {"last_story": self.last_story}
+        pickle_out = open(self.config_file, "wb")
         pickle.dump(data, pickle_out)
         pickle_out.close()
 
-    def load_config(self):
-        config_path = os.path.expanduser(
-                os.path.join('~', '.bin', 'st.pickle')
-                )
-        pickle_in = open(config_path, 'rb')
-        data = pickle.load(pickle_in)
-        pickle_in.close()
+    def collect_stories(self) -> list:
+        collection = []
+        for file in os.listdir(self.story_dir):
+            path = os.path.join(self.story_dir, file)
+            _, ext = os.path.splitext(path)
+            if "notes" not in path and not os.path.isdir(path) and ext == ".md":
+                collection.append(path)
+        collection.sort()
+        return collection
 
-        Config.storydir = data['storydir']
-        Config.laststory = data['laststory']
-        Config.lastquote = data['lastquote']
+    def refresh_story_list(self):
+        self.stories = []
+        self.stories = self.collect_stories()
 
+    def clean_text(self, title):
+        title = title.replace(" ", "_")
+        title = title.replace(",", "")
+        title = title.replace("\\", "")
+        title = title.replace("'", "")
+        return title
 
-    def myprint(self, text, italic=False, nl=False):
-        newline = '\n\n' if nl else '\n'
-        text = self.colorize(text)
-        if italic:
-            text = "\x1B[3m" + text + "\x1B[0m"
-        print(text, end=newline)
+    def create_new_story(self, new_title):
+        if new_title == "":
+            return
+        story = os.path.join(self.story_dir, f"{new_title}.md")
+        story = self.clean_text(story)
+        notes = story.replace(".md", "_notes.md")
+        overall = os.path.join(self.story_dir, "global_notes.md")
 
-    def print_error(self, message):
-        print('\033[1A', end='\x1b[2K')
-        self.myprint(f"%r‼%R {message}")
-        sleep(1.2)
+        with open(story, "w") as storyfile:
+            storyfile.write(f"# {new_title.upper()}\n")
+            storyfile.write("_an erotic tale by Transgirl_\n\n")
+            for line in DISCLAIMER:
+                storyfile.write(line)
+            storyfile.write("## Chapter One\n\n")
 
-    def select_quote(self):
-        quote = choice(Config.quotes)
-        idx = Config.quotes.index(quote)
-        while idx == Config.lastquote:
-            quote = choice(Config.quotes)
-            idx = Config.quotes.index(quote)
-        Config.lastquote = idx
-        self.save_config()
-        return quote
+        with open(notes, "w") as notefile:
+            notefile.write(f"# NOTES FOR {new_title.upper()}\n\n")
+            notefile.write("Room for some notes")
 
-    def print_header(self):
-        os.system('clear')
-        quote = self.select_quote()
-        title = '%g»%R %y' + Config.title + ' ' + Config.version + ' %g«%R'
-        t_spaces = ''
-        q_spaces = ''
-        len_title = len(self.decolorize(title))
-        len_quote = len(self.decolorize(quote))
-        if len_title > len_quote:
-            line = '%c' + ((len_title + 4) * '─') + '%R'
-            q_spaces = ((len_title - len_quote) // 2) * ' '
-        else:
-            line = '%c' + ((len_quote + 4) * '─') + '%R'
-            t_spaces = ((len_quote - len_title) // 2) * ' '
+        self.last_story = story
+        self.save_settings()
+        os.system(f"vim -p {story} {notes} {overall}")
 
-        self.myprint(line)
-        self.myprint(f'  {t_spaces}{title}')
-        self.myprint(f'  {q_spaces}{quote}', italic=True)
-        self.myprint(line, nl=True)
+    def open_story(self, id):
+        if id == "":
+            return
+        id = int(id) - 1
+        self.refresh_story_list()
+        story = self.stories[id]
+        notes = story.replace(".md", "_notes.md")
+        overall = os.path.join(self.story_dir, "global_notes.md")
 
-    def collect_stories(self):
-        stories = []
-        pattern = os.path.join(Config.storydir, '*.md')
-        stories1 = glob.glob(pattern)
-        for story in stories1:
-            # Remove the notes from the list of stories
-            if "_notes" not in story:
-                stories.append(story)
-        stories.sort()
-        return stories
+        self.last_story = story
+        self.save_settings()
+        os.system(f"vim -p {story} {notes} {overall}")
 
-    def open_files(self, story, notes):
-        cmd = 'nvim' if self.nvim else 'vim'
-        complete_cmd = f"{cmd} -p {story} {notes}"
-        os.system(complete_cmd)
+    def continue_story(self):
+        story = self.last_story
+        notes = story.replace(".md", "_notes.md")
+        overall = os.path.join(self.story_dir, "global_notes.md")
+        os.system(f"vim -p {story} {notes} {overall}")
 
-    def open_story(self, story_id):
-        stories = self.collect_stories()
-        story = stories[story_id - 1]
-        notes = story.replace('.md', '_notes.md')
-        Config.laststory = story
-        self.save_config()
-        self.open_files(story, notes)
+    def edit_story_notes(self):
+        notes = self.last_story.replace(".md", "_notes.md")
+        os.system(f"vim -p {notes}")
 
-    def continue_last_story(self):
-        notes = Config.laststory.replace('.md', '_notes.md')
-        self.open_files(Config.laststory, notes)
+    def delete_story(self, id):
+        if id == "":
+            return
+        id = int(id) - 1
+        self.refresh_story_list()
+        story = self.stories[id]
+        notes = story.replace(".md", "_notes.md")
 
-    def delete_a_story(self):
-        exit_menu = False
-        while True:
-            self.print_header()
-            stories = self.collect_stories()
-            valid = []
-            self.myprint('%cWhich story do you want to delete?%R', nl=True)
-            for num, story in enumerate(stories, start=1):
-                valid.append(str(num))
-                story_name = story.split('/')[-1].replace('_', ' ')
-                story_name = story_name.replace('.md', '').title()
-                if num < len(stories):
-                    self.myprint(f"%c[%y{num}%c]%R {story_name}")
-                else:
-                    self.myprint(f"%c[%y{num}%c]%R {story_name}", nl=True)
-            self.myprint('Leave empty to return to main menu',
-                         italic=True, nl=True)
-            prompt = self.colorize('%c»%R ')
-            response = input(prompt).lower()
-            if response == '':
-                exit_menu = True
-                break
-            elif response not in valid:
-                self.print_error('That is not a valid option...')
-            else:
-                break
+        if self.last_story == story:
+            self.last_story = ""
+            self.save_settings()
 
-        if not exit_menu:
-            filepath = stories[int(response) - 1]
-            if filepath == Config.laststory:
-                Config.laststory = ''
-            notepath = filepath.replace('.md', '_notes.md')
-            if os.path.exists(filepath):
-                os.remove(filepath)
-            if os.path.exists(notepath):
-                os.remove(notepath)
-            stories = self.collect_stories()
+        os.remove(story)
+        os.remove(notes)
+        self.collect_stories()
 
-    def create_a_new_story(self):
-        exit_menu = False
-        filepath = ''
-        notepath = ''
-        while True:
-            self.print_header()
-            self.myprint('%cWhat title do you want to give this story?%R')
-            self.myprint('Leave empty to return to main menu',
-                         italic=True, nl=True)
-            prompt = self.colorize('%c»%R ')
-            title = input(prompt).lower()
-            if title == '':
-                exit_menu = True
-                break
-            else:
-                filepath = os.path.join(
-                        Config.storydir,
-                        title.replace(' ', '_') + '.md')
-                notepath = filepath.replace('.md', '_notes.md')
+    def edit_overall_notes(self):
+        overall = os.path.join(self.story_dir, "global_notes.md")
+        os.system(f"vim -p {overall}")
 
-                if os.path.exists(filepath):
-                    self.print_error('There already is a story by that title!')
-                else:
-                    break
-
-        if not exit_menu and filepath != '':
-            with open(filepath, 'w') as story:
-                story.write(f"# {title.title()}\n")
-                story.write("_an erotic tale by TransGirl_\n\n")
-                story.write("## Disclaimer\n\n")
-                story.write("This story is a work of fiction. Any resemblance to any person living or dead is\n")
-                story.write("purely coincidental. All characters are presumed to be of legal age.\n\n")
-                story.write('## Chapter One\n\n')
-
-            with open(notepath, 'w') as note:
-                note.write(f"# {title.title()} notes\n\n")
-
-            Config.laststory = filepath
-            self.save_config()
-            self.open_files(filepath, notepath)
-
-    def process_choice(self, choice):
-        match choice:
-            case 'n': self.create_a_new_story()
-            case 'c': self.continue_last_story()
-            case 'd': self.delete_a_story()
-            case _: self.open_story(int(choice))
-
-    def menu(self):
-        last_story_name = ''
-        while True:
-            self.print_header()
-            if Config.laststory != '':
-                last_story_name = Config.laststory.split('/')[-1].replace('_', ' ').replace('.md', '').title()
-                # self.myprint(f"%wLast story%R: {story_name}", nl=True)
-            valid = []
-            stories = self.collect_stories()
-
-            if len(stories) == 0:
-                Config.laststory = ''
-                self.myprint('%gYou didn\'t write any stories yet...%R', italic=True, nl=True)
-            for count, story in enumerate(stories, start=1):
-                valid.append(str(count))
-                story_name = story.split('/')[-1].replace('_', ' ').replace('.md', '').title()
-                if count < len(stories):
-                    self.myprint(f"%c[%y{count}%c]%R {story_name}")
-                else:
-                    self.myprint(f"%c[%y{count}%c]%R {story_name}", nl=True)
-
-            valid.extend(['n', 'd', 'q'])
-            if Config.laststory != '':
-                valid.append('c')
-
-            self.myprint('%c[%yn%c]%R Start a new story')
-            if Config.laststory != '':
-                self.myprint(f"%c[%yc%c]%R Continue %c%i{last_story_name}%R")
-            if len(stories) > 0:
-                self.myprint("%c[%yd%c]%R Delete a story", nl=True)
-            self.myprint('%c[%rq%c]%R Quit', nl=True)
-            prompt = self.colorize(f'%c»%R ')
-            response = input(prompt).lower()
-            if response not in valid:
-                self.print_error('That is not a valid option...')
-            elif response == 'q':
-                break
-            else:
-                self.process_choice(response)
+    def get_title(self, storyname):
+        storyname = storyname.split("/")[-1]
+        storyname = storyname.replace("_", " ")
+        storyname = storyname.replace(".md", "")
+        storyname = storyname.title()
+        return storyname

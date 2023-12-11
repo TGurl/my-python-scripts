@@ -1,11 +1,11 @@
-import os
+import readchar
 from colors import Colors
-from settings import *
+
 
 
 class TUI:
     def __init__(self):
-        pass
+        self.cursor = True
 
     def colorize(self, text):
         for color in Colors.colors:
@@ -17,18 +17,36 @@ class TUI:
             text = text.replace(code, '')
         return text
 
-    def myprint(self, text, center=False, nl=False):
+    def clearline(self, num=1):
+        for _ in range(num):
+            print('\033[1A', end='\x1b[2K')
+
+    def myprint(self, text, nl=False, clear=False, noreturn=False):
         newline = '\n\n' if nl else '\n'
-        width = os.get_terminal_size().columns
-        temp = self.decolorize(text)
+        newline = '' if noreturn else newline
+        if clear:
+            self.clearline()
         text = self.colorize(text)
-        if center:
-            spaces = ((width - len(temp)) // 2) * ' '
+        print(text, end=newline)
+
+    def keyprint(self):
+        return readchar.readkey()
+
+    def getyesno(self, text):
+        while True:
+            self.myprint(text, noreturn=True)
+            key = self.keyprint()
+            if key.lower() not in ['y', 'n']:
+                print('Ooops')
+                self.clearline()
+            else:
+                break
+        return True if key == 'y' else False
+
+    def toggle_cursor(self):
+        if self.cursor:
+            print('\033[? 25l', end="")
+            self.cursor = False
         else:
-            spaces = ''
-        print(f"{spaces}{text}", end=newline)
-
-    def drawline(self, nl=False):
-        line = (os.get_terminal_size().columns - 1) * '─'
-        self.myprint(f"%c{line}%R", nl=nl)
-
+            print('\033[? 25h', end="")
+            self.cursor = True

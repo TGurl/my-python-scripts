@@ -1,50 +1,11 @@
-import os
-
-
-class Config:
-    title = 'Storyteller'
-    version = '0.8a'
-    storydir = os.path.expanduser(os.path.join('~', 'stories'))
-    laststory = ''
-    quotes = [
-            'I want b(.)(.)bs',
-            'I want to suck a BBC',
-            '♥ Big Black Cocks ♥ ',
-            'Black men are the only real black men',
-            'The moment I get home my dog fucks me',
-            'I am a K9 whore',
-            'I am a Natural Born Hooker',
-            'I ♥ being raped',
-            'Sucky, sucky, 1 dollar',
-            '♠ I am a Queen of Spades ♠',
-            'Please, rape me!',
-            'Fill me up with your cum!',
-            'I want to be raped by multiple black men',
-            'My dog loves to fuck me',
-            'I ♥ my dog\'s cock',
-            'I am a K9 Queen',
-            'I love being knotted',
-            'Choke me with your cock!',
-            'Let me taste your cum',
-            'My three dogs love to gangrape me',
-            'I ♥ K9 cock',
-            'I desire to be raped',
-            'I hate any protection',
-            'I want to be pregnant',
-            'I ♥ sex with strangers',
-            'Did anyone call for a hooker?',
-            'Subsribe to my OnlyFans!',
-            'I ♥ my father\'s cock!',
-            'I ♥ my brother\'s cock!',
-            'The family that lays together, stays together!',
-            'Daddy, please make me a mommy',
-            'You wanna see my pussy?',
-            'Daddy, I\'m so wet',
-            'I ♥ being an escort',
-            'You may fuck me for six dollars',
-            'My dad took my virginity when I was 7',
-            'I ♥ fucking my uncle',
-            'I ♥ fucking my cousin',
-            'Want to be my sugar daddy?'
-            ]
-    lastquote = 0
+DISCLAIMER = [
+    "## Disclaimer\n",
+    "This is a work of fiction, any resemblance to any person living or dead is\n",
+    "purely coincidental. All characters are automatically assumed to be of legal\n",
+    "age until indicated otherwise. The country where all my stories take place may\n",
+    "resemble the United States or Canada, but it's only loosely based upon them.\n",
+    "I've taken the liberty of putting a lot of European influences into them.\n",
+    "\n",
+    "Lastly, I am not a native English speaker, so please forgive any spelling or\n",
+    "grammatical mistakes.\n\n",
+]
