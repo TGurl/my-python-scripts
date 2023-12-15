@@ -156,6 +156,7 @@ class Archiver:
         extensions = [".ini"]
         if not keepsaves:
             extensions.append(".save")
+            extensions.append(".rpgsave")
 
         remove = ["log.txt", "error.txt", "traceback.txt"]
 
