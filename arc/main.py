@@ -23,6 +23,7 @@ class Archiver:
         self.remove = args.remove
         self.source = args.source
         self.porn = args.porn
+        self.archive_size = 0
         self.cursor = True
         self.usbdir = os.path.join("/", "USB", "sexgames")
         self.loredir = os.path.join("/", "lore", "sexgames")
@@ -231,10 +232,12 @@ class Archiver:
                 self.clearline()
 
         self.clearline()
+        self.archive_size = os.stat(destination).st_size
+        size = self.readable_size(self.archive_size)
         if self.porn:
-            self.msg(f"You have sex with {self.folder}")
+            self.msg(f"You have sex with {self.folder} ({size})")
         else:
-            self.msg(f"{self.folder} archived")
+            self.msg(f"{self.folder} archived ({size})")
         self.sync()
 
     def remove_archive(self):
@@ -244,12 +247,16 @@ class Archiver:
             archive_name = self.folder
 
         destdir = self.usbdir if self.usb else self.loredir
-        if os.path.exists(os.path.join(destdir, archive_name)):
-            os.remove(os.path.join(destdir, archive_name))
+        destination = os.path.join(destdir, archive_name)
+
+        if os.path.exists(destination):
+            arc_size = os.stat(destination).st_size
+            size = self.readable_size(arc_size)
+            os.remove(destination)
             if self.porn:
-                self.msg(f"You sent {archive_name} home after having sex")
+                self.msg(f"You sent {archive_name} ({size}) home after having sex")
             else:
-                self.msg(f"{archive_name} removed from archives")
+                self.msg(f"{archive_name} ({size}) removed from archives")
 
             self.toggle_cursor()
             sys.exit()
@@ -279,12 +286,13 @@ class Archiver:
     def run(self):
         self.toggle_cursor()
         self.banner()
-        self.get_free_space()
         self.check_if_folder_exists()
         if self.remove:
+            self.get_free_space()
             self.remove_archive()
         self.check_if_archived()
         self.clean_folder(keepsaves=self.keepsaves)
+        self.get_free_space()
         self.zipit()
         if not self.source:
             self.remove_source()
