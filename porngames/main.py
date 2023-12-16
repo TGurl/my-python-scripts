@@ -90,7 +90,7 @@ class Porngames:
             filelist = zf.infolist()
             total = len(filelist)
 
-            for i, item in enumerate(filelist, start=1):
+            for i, item in enumerate(filelist, start=0):
                 percent = i * 100 // total
                 fn = (
                     item.filename
