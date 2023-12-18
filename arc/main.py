@@ -43,11 +43,12 @@ class Archiver:
         free = psutil.disk_usage(destdir).free
         total = psutil.disk_usage(destdir).total
         percent = free * 100 // total
+        free_space = self.readable_size(free)
 
         if self.porn:
-            self.msg(f"Your pussy is {percent}% open")
+            self.msg(f"Your pussy is {free_space} ({percent}%) open")
         else:
-            self.msg(f"Free space: {percent}%")
+            self.msg(f"Free space: {free_space} ({percent}%)")
 
     def toggle_cursor(self):
         if self.cursor:
@@ -159,7 +160,7 @@ class Archiver:
             extensions.append(".save")
             extensions.append(".rpgsave")
 
-        remove = ["log.txt", "error.txt", "traceback.txt"]
+        remove = ["log.txt", "errors.txt", "traceback.txt"]
 
         # --- step 2: check the extensions
         for file in files:
