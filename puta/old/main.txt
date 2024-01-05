@@ -1,0 +1,244 @@
+#!/usr/bin/env python
+import argparse
+import os
+import sys
+
+
+# ---------------------------------------------------------------------------
+# Class Colors - a simple class to enable colors
+# ---------------------------------------------------------------------------
+class Colors:
+    reset = "\033[0m"
+    black = "\033[30;1m"
+    red = "\033[31;1m"
+    green = "\033[32;1m"
+    darkgreen = "\033[32m"
+    yellow = "\033[33;1m"
+    blue = "\033[34;1m"
+    pink = "\033[35;1m"
+    cyan = "\033[36;1m"
+    white = "\033[37;1m"
+    gray = "\033[37m"
+    italic = "\x1B[3m"
+
+    colors = [
+        ("%R", reset),
+        ("%B", black),
+        ("%G", gray),
+        ("%r", red),
+        ("%g", green),
+        ("%dg", darkgreen),
+        ("%y", yellow),
+        ("%b", blue),
+        ("%p", pink),
+        ("%c", cyan),
+        ("%w", white),
+        ("%i", italic),
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Class config - Configuration
+# ---------------------------------------------------------------------------
+class Config:
+    title = "%yARC v6.0%R - %gmade with %r🤍%g by Transgirl%R"
+    usbdir = os.path.join("/", "USB", "sexgames")
+    loredir = os.path.join("/", "lore", "sexgames")
+    donedir = os.path.join("/", "lore", "sexgames", "done")
+
+
+# ---------------------------------------------------------------------------
+# Class Archiver - the main class
+# ---------------------------------------------------------------------------
+class Archiver:
+    def __init__(self):
+        pass
+
+    def clearline(self, num=1):
+        for _ in range(num):
+            print("\033[1A", end="\x1b[2K")
+
+    def yesno(self, question):
+        prompt = self.colorize(f" [%y?%R] {question} (y/n) ")
+        while True:
+            answer = input(prompt).lower()
+            if answer in "YyNn":
+                break
+        if answer in "Yy":
+            return True
+        return False
+
+    def colorize(self, text):
+        for color in Colors.colors:
+            text = text.replace(color[0], color[1])
+        return text
+
+    def decolorize(self, text):
+        for color in Colors.colors:
+            text = text.replace(color[0], "")
+        return text
+
+    def printf(self, text, new_line=False):
+        cariage_return = "\n\n" if new_line else "\n"
+        text = self.colorize(text)
+        print(text, end=cariage_return)
+
+    def panic(self, text):
+        self.printf(f" [%r!%R] {text}")
+        sys.exit()
+
+    def info(self, text):
+        self.printf(f" [%b-%R] {text}")
+
+    def okmsg(self, text):
+        self.printf(f" [%g✓%R] {text}")
+
+    def error(self, text):
+        self.printf(f" [%r✗$R] {text}")
+
+    def progress(self, text):
+        spaces = 5 * " "
+        self.printf(f"{spaces}%c╰▶%R {text}")
+
+    def readable_size(self, num, suffix="b"):
+        for unit in ["", "k", "M", "G", "T", "P", "E", "Z"]:
+            if abs(num) < 1024.0:
+                # return "%3.1f %s%s" % (num, unit, suffix)
+                return f"{num:3.1f} {unit}{suffix}"
+            num /= 1024.0
+        # return "%.1f%s%s" % (num, "Yi", suffix)
+        return f"{num:.1f} Yi{suffix}"
+
+    def banner(self, clear=True):
+        if clear:
+            os.system("clear")
+
+        line = (len(self.decolorize(Config.title)) + 3) * "─"
+        topline = f"%c╭{line}╮"
+        botline = f"╰{line}╯%R"
+        midline = f"│ {Config.title} %c│"
+
+        self.printf(topline)
+        self.printf(midline)
+        self.printf(botline)
+
+    def syncing(self):
+        self.info("Syncing...")
+        os.system("sync")
+        self.clearline()
+
+    def mover(self, source_fn, destination, yes=False):
+        archive_name = source_fn.split("/")[-1]
+        source_size = os.stat(source_fn).st_size
+        target_fn = os.path.join(destination, archive_name)
+        copied = 0
+        percent = 0
+        h_size = self.readable_size(source_size)
+
+        self.info(f"Moving %i{archive_name}%R to %i{destination}%R")
+        with open(source_fn, "rb") as source:
+            with open(target_fn, "wb") as target:
+                self.progress(f"Moving {archive_name} to {destination} [{percent:3}%]")
+
+                while True:
+                    chunk = source.read(32768)
+                    if not chunk:
+                        break
+                    target.write(chunk)
+                    copied += len(chunk)
+                    percent = int(copied * 100 / source_size)
+                    self.clearline()
+                    self.progress(f"{percent:3}% of {h_size} done...")
+
+        answer = True if yes else self.yesno("Remove the source?")
+        if answer:
+            os.remove(source_fn)
+
+        self.syncing()
+        self.clearline(num=3)
+        self.okmsg(f"Moved %i{archive_name}%R to %i{destination}%R")
+
+    def clean_folder(self, folder):
+        pass
+
+    def zipit(self, folder):
+        pass
+
+    def check_archive(self, folder):
+        pass
+
+    def move_archive(self, folder, destination):
+        pass
+
+    def run(self, args):
+        self.banner()
+
+        # --- 1. Check if folder exists if not moving to done
+        if not os.path.exists(args.folder) and not args.done:
+            self.panic(f"The %i{args.folder}%R folder doesn't seem to exist!")
+
+        # --- 2. Set parameters
+        archive_name = args.folder + ".zip"
+        destination = Config.usbdir if args.usb else Config.loredir
+
+        if args.done:
+            destination = Config.donedir
+
+        # --- 3. Check if game has been archived already
+        if os.path.exists(os.path.join(destination, archive_name)):
+            self.panic(
+                f"The archive %i{archive_name}%R already exists in %i{destination}%R"
+            )
+
+        # --- 4. If args.done move archive to donedir
+        if args.done:
+            locations = [Config.loredir, Config.usbdir]
+            source = ""
+            for location in locations:
+                if os.path.exists(os.path.join(location, archive_name)):
+                    source = os.path.join(location, archive_name)
+                    break
+
+            if not source:
+                self.panic(f"%i{archive_name}%R not found!")
+
+            self.mover(source, destination, args.yes)
+
+        # --- 5. Clean the folder
+        self.clean_folder(args.folder)
+
+        # --- 6. Zip the folder
+        self.zipit(args.folder)
+
+        # --- 7. Check the created zipfile
+        self.check_archive(args.folder)
+
+        # --- 8. Move the created zipfile to it's destination
+        self.move_archive(args.folder, destination)
+
+        # --- 9. Done
+        self.okmsg("Done!")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("folder", help="The folder to be archived")
+
+    parser.add_argument(
+        "-y",
+        "--yes",
+        action="store_true",
+        default=False,
+        help="Assume yes to all questions",
+    )
+
+    parser.add_argument(
+        "-u", "--usb", action="store_true", default=False, help="Store archive to usb"
+    )
+
+    parser.add_argument(
+        "-d", "--done", action="store_true", default=False, help="Move archive to done"
+    )
+    app = Archiver()
+    app.run(parser.parse_args())

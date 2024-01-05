@@ -129,23 +129,29 @@ class Porngames:
             print(f"› Extracting {idx}/{total} : {item} ({size})")
             try:
                 self.unzip(item, target_folder)
+                self.clear_line()
             except KeyboardInterrupt:
                 print("› CTRL+C detected. Process halted!")
                 sys.exit()
 
-            # ----------------------------------------------
-            # -- 3 Clear the previous line
-            # ----------------------------------------------
-            self.clear_line()
+        # ----------------------------------------------
+        # -- 3 Clear the previous line
+        # ----------------------------------------------
+        if self.delete:
+            for idx, item in enumerate(data, start=1):
+                size = self.convert_size(os.stat(item).st_size, decimals=1)
 
-            if self.delete:
-                print(f"› Deleting {item} ({size})")
-                os.remove(item)
-                sleep(4)
-                self.clear_line()
+                try:
+                    print(f"› Deleting {item} ({size})")
+                    os.remove(item)
+                    sleep(2.5)
+                    self.clear_line()
+                except KeyboardInterrupt:
+                    print("› CTRL+C detected. Process halted!")
+                    sys.exit()
 
-        if total > 1:
-            print(f"› Extracted {total} games.")
+        gstring = "games" if total > 1 else "game"
+        print(f"› Extracted {total} {gstring}.")
 
     def remove_games(self, data):
         self.banner(clear=True)

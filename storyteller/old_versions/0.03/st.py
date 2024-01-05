@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import os
-
-from utils import Utils
-from tui import TUI
 from random import choice
+
+from tui import TUI
+from utils import Utils
 
 
 class StoryTeller:

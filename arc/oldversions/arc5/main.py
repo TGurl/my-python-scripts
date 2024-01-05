@@ -157,7 +157,7 @@ class Archiver:
 
         remove_list = []
         files = self.read_folder()
-        extensions = [".log", ".zip", ".code-workspace"]
+        extensions = [".log", ".zip"]
         if not keepsaves:
             extensions.append(".save")
             extensions.append(".rpgsave")

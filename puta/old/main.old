@@ -157,12 +157,12 @@ class Archiver:
 
         remove_list = []
         files = self.read_folder()
-        extensions = [".log", ".zip", ".code-workspace"]
+        extensions = [".ini", ".log", ".zip"]
         if not keepsaves:
             extensions.append(".save")
             extensions.append(".rpgsave")
 
-        remove = ["log.txt", "errors.txt", "traceback.txt", "memory.txt", "desktop.ini"]
+        remove = ["log.txt", "errors.txt", "traceback.txt", "memory.txt"]
 
         # --- step 2: check the extensions
         for file in files:
@@ -244,12 +244,13 @@ class Archiver:
                 self.msg(f"ERROR: {ex}", exit_app=True)
 
         self.clearline()
+        self.clearline()
         self.archive_size = os.stat(destination).st_size
         size = self.readable_size(self.archive_size)
         if self.porn:
             self.msg(f"You have sex with {self.folder} ({size})")
         else:
-            self.msg(f"{self.folder} archived ({size})")
+            self.msg(f"{self.folder} archived to {destdir} ({size})")
         self.sync()
 
     def remove_archive(self):
