@@ -151,8 +151,8 @@ def collect_all_info():
     SysInfo.username = os.popen("whoami").read().strip()
     SysInfo.kernel_id = os.popen('uname -r').read().strip()
     SysInfo.uptime = get_uptime()
-    SysInfo.total = os.popen("pacman -Q | wc -l").read().strip()
-    SysInfo.total_explicit = os.popen("pacman -Qe | wc -l").read().strip()
+    #SysInfo.total = os.popen("pacman -Q | wc -l").read().strip()
+    #SysInfo.total_explicit = os.popen("pacman -Qe | wc -l").read().strip()
     SysInfo.memory = get_memory_usage()
     SysInfo.cpu = get_cpu_info()
 
@@ -206,8 +206,8 @@ def show_info():
     print(f"{Colors.cyan2}CPU:{Colors.reset}        {SysInfo.cpu[0]}% over {SysInfo.cpu[1]} cores")
     print(f"{Colors.cyan2}Memory:{Colors.reset}     {mem_used}/{mem_total} ({mem_percentage}%)")
     print(f"{Colors.cyan2}Uptime:{Colors.reset}     {SysInfo.uptime}")
-    print(f"{Colors.cyan2}Installed:{Colors.reset}  {SysInfo.total} pkgs")
-    print(f"{Colors.cyan2}Explicit:{Colors.reset}   {SysInfo.total_explicit} pkgs")
+    #print(f"{Colors.cyan2}Installed:{Colors.reset}  {SysInfo.total} pkgs")
+    #print(f"{Colors.cyan2}Explicit:{Colors.reset}   {SysInfo.total_explicit} pkgs")
     print(f"{Colors.cyan2}Wallpaper:{Colors.reset}  {SysInfo.wpname}")
     if SysInfo.time_left == "disabled":
         print(f"{Colors.cyan2}Timer:{Colors.reset}      disabled")

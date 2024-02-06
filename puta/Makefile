@@ -19,4 +19,4 @@ uninstall:
 	@rm ~/.bin/$(APPNAME)
 
 edit:
-	@nvim -p main.py
+	@nvim -p main.py core.py colors.py

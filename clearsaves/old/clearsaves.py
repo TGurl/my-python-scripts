@@ -1,45 +1,45 @@
 #!/usr/bin/env python3
-import os
-import sys
-import shutil
 import glob
-
+import os
+import shutil
+import sys
 from random import choice, randint
 from time import sleep
+
 from colors import Colors
 
 
 class Config:
     titles = [
-        'Working the streets',
-        'Lady of the night',
-        'Callgirl on duty',
-        'First class Escort',
-        'Streetwhore',
-        'Meth whore',
+        "Working the streets",
+        "Lady of the night",
+        "Callgirl on duty",
+        "First class Escort",
+        "Streetwhore",
+        "Meth whore",
         "Daddy's little slut",
-        'Shylark',
-        'K9 Addict'
+        "Shylark",
+        "K9 Addict",
     ]
-    version = '0.3b'
-    keep = ['backups', 'launcher-4', 'tokens']
+    version = "0.3b"
+    keep = ["backups", "launcher-4", "tokens"]
     remarks = [
-        'Fucking with',
-        'Having sex with',
-        'Being raped by',
-        'Hooking for',
-        'Kissing with',
-        'Blowing',
-        'Shooting meth with',
-        'Being beaten by',
-        'Dominating',
-        'Pegging',
-        'Having unsafe sex with',
-        'Stretched out by',
-        'Filming a porn with',
-        'Streaming incest with',
-        'Fucking my dog in front of',
-        'Spreading my legs for'
+        "Fucking with",
+        "Having sex with",
+        "Being raped by",
+        "Hooking for",
+        "Kissing with",
+        "Blowing",
+        "Shooting meth with",
+        "Being beaten by",
+        "Dominating",
+        "Pegging",
+        "Having unsafe sex with",
+        "Stretched out by",
+        "Filming a porn with",
+        "Streaming incest with",
+        "Fucking my dog in front of",
+        "Spreading my legs for",
     ]
 
 
@@ -54,32 +54,28 @@ class Cleaner:
 
     def decolorize(self, text):
         for code in Colors.codes:
-            text = text.replace(code, '')
+            text = text.replace(code, "")
         return text
 
     def choose_title(self):
         return choice(Config.titles)
 
     def myprint(self, text, nl=False):
-        newline = '\n\n' if nl else '\n'
+        newline = "\n\n" if nl else "\n"
         text = self.colorize(text)
         print(text, end=newline)
 
     def render_header(self):
-        os.system('clear')
+        os.system("clear")
         self.myprint(f"%c>> %y{self.title}%R %g{Config.version} %c<<%R", nl=True)
 
     def collect_cache(self):
-        renpycache = os.path.expanduser(
-            os.path.join("~", "Downloads","Renpy")
-        )
-        entries = glob.glob(os.path.join(renpycache, '**', 'tmp'), recursive=True)
+        renpycache = os.path.expanduser(os.path.join("~", "Downloads", "Renpy"))
+        entries = glob.glob(os.path.join(renpycache, "**", "tmp"), recursive=True)
         return entries
 
     def collect_content(self):
-        folder = os.path.expanduser(
-            os.path.join("~", ".renpy")
-        )
+        folder = os.path.expanduser(os.path.join("~", ".renpy"))
         entries = []
         for entry in os.listdir(folder):
             if os.path.isdir(os.path.join(folder, entry)) and entry not in Config.keep:
@@ -87,12 +83,12 @@ class Cleaner:
         return entries
 
     def ledger(self, total_johns, earnings):
-        os.system('clear')
+        os.system("clear")
         john = "Johns" if total_johns != 1 else "John"
-        tabs = '\t' if total_johns < 2 else '\t'
+        tabs = "\t" if total_johns < 2 else "\t"
         width = 30
-        title = '%c>> %yL E D G E R %c<<%R'
-        subtitle = f'%c{self.title}%R'
+        title = "%c>> %yL E D G E R %c<<%R"
+        subtitle = f"%c{self.title}%R"
         wtitle = self.decolorize(title)
         wsub = self.decolorize(subtitle)
 
@@ -110,7 +106,7 @@ class Cleaner:
         self.myprint(width * "-", nl=True)
         self.myprint("You filthy whore you!")
         sys.exit()
-        
+
     def run(self):
         self.render_header()
         games = self.collect_content()
@@ -124,27 +120,30 @@ class Cleaner:
             self.myprint("You stood out there on the street for several hours,")
             self.myprint("and not a single John came. Could it be because it rained?")
             sys.exit()
-        
+
         if len(games) > 0:
             newline = False
             for i, entry in enumerate(games, start=1):
                 remark = choice(Config.remarks)
-                earned += randint(30, 500)
+                earnings = randint(30, 500)
+                earned += earnings
                 total_johns += 1
                 name = entry.split("/")[-1]
                 if i == len(games):
                     newline = True
-                self.myprint(f"%b>%R {remark} %i%g{name}%R", nl=newline)
+                self.myprint(
+                    f"%b>%R {remark} %i%g{name}%R earning you ${earnings}", nl=newline
+                )
                 shutil.rmtree(entry)
                 sleep(0.6)
-        
+
         if len(cache) > 0:
             newline = False
             for i, entry in enumerate(cache, start=1):
                 remark = choice(Config.remarks)
                 earned += randint(50, 450)
                 total_johns += 1
-                name = entry.split('/')[-2]
+                name = entry.split("/")[-2]
                 if i == len(cache):
                     newline = True
                 self.myprint(f"%c>%R {remark} %i%y{name}%R", nl=newline)
@@ -152,7 +151,9 @@ class Cleaner:
                 sleep(0.6)
 
         if total_johns == 0:
-            self.myprint("You didn't have any customers today. You go home empty handed...")
+            self.myprint(
+                "You didn't have any customers today. You go home empty handed..."
+            )
             sys.exit()
         else:
             john = "John"

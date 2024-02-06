@@ -1,5 +1,5 @@
 FLAG = --onefile
-APPNAME = arc
+APPNAME = clearsaves
 
 install: build move clean
 

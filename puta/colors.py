@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-
+# --------------------------------------------------------- class Colors
 class Colors:
     reset = "\033[0m"
     black = "\033[30;1m"
@@ -14,7 +13,6 @@ class Colors:
     gray = "\033[37m"
     italic = "\x1B[3m"
 
-    codes = ['%R', '%B', '%G', '%r', '%g', '%dg', '%y', '%b', '%p', '%c', '%w', '%i']
     colors = [
             ('%R', reset),
             ('%B', black),
@@ -29,3 +27,5 @@ class Colors:
             ('%w', white),
             ('%i', italic)
     ]
+
+

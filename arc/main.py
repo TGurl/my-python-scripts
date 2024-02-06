@@ -23,6 +23,7 @@ class Archiver:
         self.remove = args.remove
         self.source = args.source
         self.porn = args.porn
+        self.remove_zips = args.remove_zips
         self.archive_size = 0
         self.cursor = True
         self.usbdir = os.path.join("/", "USB", "sexgames")
@@ -157,10 +158,14 @@ class Archiver:
 
         remove_list = []
         files = self.read_folder()
-        extensions = [".log", ".zip", ".code-workspace"]
+        extensions = [".log", ".code-workspace"]
         if not keepsaves:
             extensions.append(".save")
             extensions.append(".rpgsave")
+
+        if self.remove_zips:
+            print("---> Remove zips:", self.remove_zips)
+            # extensions.append(".zip")
 
         remove = ["log.txt", "errors.txt", "traceback.txt", "memory.txt", "desktop.ini"]
 
@@ -329,6 +334,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-s", "--source", action="store_true", help="Keep the source folder"
+    )
+    parser.add_argument(
+        "-z", "--remove-zips", action="store_true", help="Remove zip files"
     )
     parser.add_argument("-p", "--porn", action="store_true", help="Pornify ARC")
 
